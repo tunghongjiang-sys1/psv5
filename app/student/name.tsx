@@ -8,7 +8,6 @@ export default function StudentNameScreen() {
 
   const handleGo = () => {
     if (!name.trim()) return;
-    // later: save name to Firebase
     router.push('/student/map');
   };
 
