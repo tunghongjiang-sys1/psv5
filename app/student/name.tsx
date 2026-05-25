@@ -1,5 +1,5 @@
 // app/student/name.tsx
-import { View, Text, TextInput, Pressable, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, Image, Alert } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { auth, db } from '../../lib/firebaseConfig';
@@ -14,14 +14,27 @@ export default function StudentNameScreen() {
 
   const handleGo = async () => {
     const trimmed = name.trim();
-    if (!trimmed || !auth.currentUser) return;
+
+    if (!trimmed) {
+      Alert.alert('Enter your name', 'Please type your name to start.');
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('No auth.currentUser when saving student name');
+      Alert.alert(
+        'Not signed in',
+        'You are not signed in. Please restart the app or tell your teacher.'
+      );
+      return;
+    }
 
     try {
       setSaving(true);
-      const uid = auth.currentUser.uid;
 
       await setDoc(
-        doc(db, 'students', uid),
+        doc(db, 'students', user.uid),
         {
           name: trimmed,
           currentSessionId: SESSION_ID,
@@ -31,8 +44,12 @@ export default function StudentNameScreen() {
       );
 
       router.push('/student/groupings');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving student name', error);
+      Alert.alert(
+        'Error',
+        error?.message ?? 'Could not save your name. Please try again.'
+      );
     } finally {
       setSaving(false);
     }
