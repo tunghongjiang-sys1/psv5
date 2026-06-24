@@ -1,23 +1,423 @@
-import { View, Text, StyleSheet } from 'react-native';
+// app/kelda/session.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, ActivityIndicator, Alert, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { ref, set, update, remove } from 'firebase/database';
+import { db } from '../../lib/firebaseConfig';
+import { usefb, fw, c, showConfirm, showAlert } from '../../lib/helpers';
+import { Wide, Btn, PsIcon } from '../../components/parts';
 
 export default function KeldaSessionScreen() {
+  const router = useRouter();
+  const [budgetInput, setBudgetInput] = useState('50');
+  const [starting, setStarting] = useState(false);
+  const [ending, setEnding] = useState(false);
+
+  const activeSession = usefb('activeSession');
+  const sessionData = usefb(
+    activeSession?.id ? `sessions/${activeSession.id}` : null
+  );
+
+  // Sync controls with active session locks
+  const [interview, setInterview] = useState(false);
+  const [shopping, setShopping] = useState(false);
+  const [reflections, setReflections] = useState(false);
+  const [summary, setSummary] = useState(false);
+
+  useEffect(() => {
+    if (sessionData?.unlocked) {
+      setInterview(!!sessionData.unlocked.interview);
+      setShopping(!!sessionData.unlocked.shopping);
+      setReflections(!!sessionData.unlocked.reflections);
+      setSummary(!!sessionData.unlocked.summary);
+    }
+  }, [sessionData]);
+
+  const startSession = async () => {
+    if (starting) return;
+    setStarting(true);
+    try {
+      const b = parseInt(budgetInput) || 50;
+      const sid = 'session_' + Date.now();
+      await fw(
+        set(ref(db, `sessions/${sid}`), {
+          id: sid,
+          budget: b,
+          startedAt: Date.now(),
+          unlocked: {
+            interview: false,
+            shopping: false,
+            reflections: false,
+            summary: false,
+          },
+          students: {},
+        })
+      );
+      await fw(
+        set(ref(db, 'activeSession'), {
+          id: sid,
+          status: 'active',
+          budget: b,
+          startedAt: Date.now(),
+        })
+      );
+    } catch (e: any) {
+      Alert.alert('Error starting session', e.message);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const togglePhase = async (phase: 'interview' | 'shopping' | 'reflections' | 'summary', currentVal: boolean) => {
+    if (!activeSession?.id) return;
+    const nextVal = !currentVal;
+    try {
+      await update(ref(db, `sessions/${activeSession.id}/unlocked`), {
+        [phase]: nextVal,
+      });
+    } catch (e: any) {
+      Alert.alert('Error toggling phase', e.message);
+    }
+  };
+
+  const endSession = async () => {
+    if (ending) return;
+    showConfirm(
+      'End Session',
+      'Are you sure you want to end this session? Students will no longer be able to submit their work.',
+      async () => {
+        setEnding(true);
+        try {
+          if (activeSession?.id) {
+            await fw(remove(ref(db, 'activeSession')));
+          }
+          router.replace('/kelda/dashboard');
+        } catch (e: any) {
+          showAlert('Error ending session', e.message);
+          setEnding(false);
+        }
+      }
+    );
+  };
+
+  if (activeSession === undefined) {
+    return (
+      <View style={styles.loadingroot}>
+        <ActivityIndicator color={c.navy} size="large" />
+      </View>
+    );
+  }
+
+  const isActive = activeSession && activeSession.status === 'active';
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Session Settings</Text>
-      <Text>Placeholder for starting new session, setting budget, and enabling tabs.</Text>
-    </View>
+    <SafeAreaView style={styles.root}>
+      {/* Header bar */}
+      <View style={styles.navbar}>
+        <Pressable onPress={() => router.replace('/kelda/dashboard')} style={styles.backbutton}>
+          <Text style={styles.backtext}>← Back</Text>
+        </Pressable>
+        <Text style={styles.navbartitle}>
+          {isActive ? 'Session Controls' : 'Configure New Session'}
+        </Text>
+      </View>
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+        <Wide>
+          {isActive ? (
+            <View style={styles.controlslayout}>
+              <Text style={styles.infotitle}>Session ID: {activeSession.id}</Text>
+              <Text style={styles.infosubtitle}>Configure what students can access in real-time.</Text>
+
+              {/* Phases */}
+              <View style={styles.phasecard}>
+                <View style={styles.phaserow}>
+                  <View style={styles.phaseinfo}>
+                    <Text style={styles.phasename}>1. Groupings / Entrance</Text>
+                    <Text style={styles.phasedesc}>Automatically open when student joins</Text>
+                  </View>
+                  <View style={[styles.statustag, { backgroundColor: c.green }]}>
+                    <Text style={styles.statustagtext}>Always Open</Text>
+                  </View>
+                </View>
+
+                {/* Interview */}
+                <View style={styles.phaserow}>
+                  <View style={styles.phaseinfo}>
+                    <Text style={styles.phasename}>2. Interview/Map Phase</Text>
+                    <Text style={styles.phasedesc}>Elders chat interfaces and neighborhood</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => togglePhase('interview', interview)}
+                    style={({ pressed }) => [
+                      styles.togglebtn,
+                      { backgroundColor: interview ? c.teal : c.grey },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={styles.togglebtntext}>
+                      {interview ? 'Unlocked' : 'Locked'}
+                    </Text>
+                    <PsIcon name={interview ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
+                </View>
+
+                {/* Shopping */}
+                <View style={styles.phaserow}>
+                  <View style={styles.phaseinfo}>
+                    <Text style={styles.phasename}>3. Shopping Phase</Text>
+                    <Text style={styles.phasedesc}>Budget spending, buying and borrowing items</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => togglePhase('shopping', shopping)}
+                    style={({ pressed }) => [
+                      styles.togglebtn,
+                      { backgroundColor: shopping ? c.teal : c.grey },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={styles.togglebtntext}>
+                      {shopping ? 'Unlocked' : 'Locked'}
+                    </Text>
+                    <PsIcon name={shopping ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
+                </View>
+
+                {/* Reflections */}
+                <View style={styles.phaserow}>
+                  <View style={styles.phaseinfo}>
+                    <Text style={styles.phasename}>4. Reflections Phase</Text>
+                    <Text style={styles.phasedesc}>Write reflection and view other reflections</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => togglePhase('reflections', reflections)}
+                    style={({ pressed }) => [
+                      styles.togglebtn,
+                      { backgroundColor: reflections ? c.teal : c.grey },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={styles.togglebtntext}>
+                      {reflections ? 'Unlocked' : 'Locked'}
+                    </Text>
+                    <PsIcon name={reflections ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
+                </View>
+
+                {/* Summary */}
+                <View style={styles.phaserow}>
+                  <View style={styles.phaseinfo}>
+                    <Text style={styles.phasename}>5. Summary / Submit Phase</Text>
+                    <Text style={styles.phasedesc}>Confirm and finalize student submissions</Text>
+                  </View>
+                  <Pressable
+                    onPress={() => togglePhase('summary', summary)}
+                    style={({ pressed }) => [
+                      styles.togglebtn,
+                      { backgroundColor: summary ? c.teal : c.grey },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={styles.togglebtntext}>
+                      {summary ? 'Unlocked' : 'Locked'}
+                    </Text>
+                    <PsIcon name={summary ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
+                </View>
+              </View>
+
+              {ending ? (
+                <ActivityIndicator color={c.red} size="large" style={{ marginTop: 24 }} />
+              ) : (
+                <Btn
+                  label="End Current Session"
+                  onPress={endSession}
+                  color={c.red}
+                  textColor={c.white}
+                  style={{ marginTop: 24 }}
+                  icon="forbidden"
+                />
+              )}
+            </View>
+          ) : (
+            <View style={styles.formlayout}>
+              <Text style={styles.formtitle}>Set Session Budget</Text>
+              <Text style={styles.formsubtitle}>
+                Students will use this budget to purchase items in the shopping phase.
+              </Text>
+
+              <TextInput
+                style={styles.budgetinput}
+                value={budgetInput}
+                onChangeText={setBudgetInput}
+                keyboardType="numeric"
+                placeholder="50"
+                placeholderTextColor={c.greyLight}
+              />
+
+              {starting ? (
+                <ActivityIndicator color={c.orange} size="large" />
+              ) : (
+                <Btn
+                  label="Start Session"
+                  onPress={startSession}
+                  color={c.orange}
+                  textColor={c.white}
+                  style={{ width: '100%', marginTop: 24 }}
+                />
+              )}
+            </View>
+          )}
+        </Wide>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loadingroot: {
     flex: 1,
-    padding: 24,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: c.offWhite,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
+  root: {
+    flex: 1,
+    backgroundColor: c.offWhite,
+  },
+  navbar: {
+    backgroundColor: c.navy,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backbutton: {
+    marginRight: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  backtext: {
+    color: c.yellow,
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+  },
+  navbartitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 20,
+    color: c.white,
+    flex: 1,
+  },
+  scrollcontent: {
+    padding: 24,
+  },
+  controlslayout: {
+    gap: 12,
+  },
+  infotitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 22,
+    color: c.navy,
+  },
+  infosubtitle: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 14,
+    color: c.grey,
+    marginBottom: 16,
+  },
+  phasecard: {
+    backgroundColor: c.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 16,
+  },
+  phaserow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  phaseinfo: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  phasename: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+    color: c.navy,
+  },
+  phasedesc: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 12,
+    color: c.grey,
+    marginTop: 2,
+  },
+  statustag: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  statustagtext: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 12,
+    color: c.white,
+  },
+  togglebtn: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  togglebtntext: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 12,
+    color: c.white,
+  },
+  formlayout: {
+    backgroundColor: c.white,
+    borderRadius: 20,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    marginTop: 40,
+  },
+  formtitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 22,
+    color: c.navy,
+    marginBottom: 8,
+  },
+  formsubtitle: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 14,
+    color: c.grey,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  budgetinput: {
+    borderBottomWidth: 2,
+    borderBottomColor: c.teal,
+    fontSize: 36,
+    fontFamily: 'DMSans_700Bold',
+    color: c.navy,
+    paddingVertical: 8,
+    textAlign: 'center',
+    width: '100%',
+    maxWidth: 200,
     marginBottom: 16,
   },
 });

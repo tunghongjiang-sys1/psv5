@@ -6,22 +6,23 @@ import {
   browserLocalPersistence,
   Auth,
 } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore'; // ← add this
+import { getDatabase, Database } from 'firebase/database';
 
-// Your Firebase config
+// Firebase configuration for ps-d-228ec
 const firebaseConfig = {
-  apiKey: 'AIzaSyC30BwjNVq2BMxsOQAXD9Y1yXL2Y2ArJD4',
-  authDomain: 'projectserve-8cd90.firebaseapp.com',
-  projectId: 'projectserve8cd90',
-  storageBucket: 'projectserve-8cd90.firebasestorage.app',
-  messagingSenderId: '1023876147059',
-  appId: '1:1023876147059:web:0b75d3f5195619b1198706',
-  measurementId: 'G-CFKNHFPPRN',
+  apiKey: 'AIzaSyCtbS05D9qXpHJk54z5v3iADl4NWojXXlQ',
+  authDomain: 'ps-d-228ec.firebaseapp.com',
+  databaseURL: 'https://ps-d-228ec-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'ps-d-228ec',
+  storageBucket: 'ps-d-228ec.firebasestorage.app',
+  messagingSenderId: '144746123825',
+  appId: '1:144746123825:web:b10dcea0e82aa839babb10',
+  measurementId: 'G-BHFEE295BK',
 };
 
 let app: FirebaseApp;
 let auth: Auth;
-let db: Firestore;
+let db: Database;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
@@ -30,11 +31,11 @@ if (!getApps().length) {
     persistence: browserLocalPersistence,
   });
 
-  db = getFirestore(app); // ← init Firestore [web:45][web:46]
+  db = getDatabase(app);
 } else {
   app = getApps()[0]!;
   auth = getAuth(app);
-  db = getFirestore(app);
+  db = getDatabase(app);
 }
 
 export { app, auth, db };

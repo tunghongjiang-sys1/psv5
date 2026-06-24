@@ -1,6 +1,5 @@
 // app/_layout.tsx
-import { Stack } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
+import { Stack } from 'expo-router'; import { View, ActivityIndicator } from 'react-native';
 import { useAnonymousAuth } from '../lib/useAnonymousAuth';
 import {
   useFonts,
