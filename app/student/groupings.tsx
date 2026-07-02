@@ -1,9 +1,8 @@
-// app/student/groupings.tsx
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, update } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
+import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, c } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, Wide, Btn } from '../../components/parts';
@@ -16,7 +15,6 @@ export default function StudentGroupingsScreen() {
   const [saving, setSaving] = useState(false);
   const navigatedRef = useRef(false);
 
-  // Redirect if state not set
   useEffect(() => {
     if (!studentId || !sessionId) {
       router.replace('/student/name');
@@ -38,9 +36,17 @@ export default function StudentGroupingsScreen() {
   }, [interviewUnlocked, submitted]);
 
   const toggle = useCallback((id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelected((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((x) => x !== id);
+      } else {
+        if (prev.length >= 5) {
+          Alert.alert('Maximum group size reached', 'You can select up to 5 group members.');
+          return prev;
+        }
+        return [...prev, id];
+      }
+    });
   }, []);
 
   const handleGo = async () => {
@@ -67,20 +73,27 @@ export default function StudentGroupingsScreen() {
           <Text style={styles.heading}>
             Choose the students whom you would like to be in a group with!
           </Text>
+          <Text style={styles.subtitle}>
+            Selected: {selected.length} / 5 members
+          </Text>
 
           <View style={styles.studentgrid}>
             {students.map((s: any) => {
               const sel = selected.includes(s.id);
+              const atLimit = selected.length >= 5 && !sel;
+              const bgColor = sel ? c.teal : (atLimit ? c.greyLight : c.greyDark);
+              const textColor = sel ? c.navy : (atLimit ? c.grey : c.white);
               return (
                 <Pressable
                   key={s.id}
                   onPress={() => toggle(s.id)}
                   style={[
                     styles.studentcard,
-                    { backgroundColor: sel ? c.teal : c.greyDark },
+                    { backgroundColor: bgColor },
                   ]}
+                  disabled={atLimit}
                 >
-                  <Text style={[styles.studentname, { color: sel ? c.navy : c.white }]}>
+                  <Text style={[styles.studentname, { color: textColor }]}>
                     {s.name}
                   </Text>
                 </Pressable>
@@ -127,14 +140,21 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: c.navy,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 8,
     marginTop: 16,
+  },
+  subtitle: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 14,
+    color: c.grey,
+    textAlign: 'center',
+    marginBottom: 24,
   },
   studentgrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
     width: '100%',
   },
   studentcard: {

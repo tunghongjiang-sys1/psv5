@@ -1,4 +1,4 @@
-// app/student/interview.tsx
+
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -12,8 +12,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, update } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
+import { db, ref, update } from '../../lib/firebaseConfig';
 import { c, fw, usefb } from '../../lib/helpers';
 import {
   getInterviewQuickQuestions,
@@ -108,10 +107,6 @@ export default function StudentInterviewScreen() {
     [activePersonaId]
   );
   const activeMessages = messagesByPersona[activePersona.id] ?? getStarter(activePersona);
-  const completedChats = interviewPersonas.filter((persona) => {
-    const messages = messagesByPersona[persona.id] ?? [];
-    return messages.some((message) => message.role === 'user');
-  }).length;
   const isWide = width >= 760;
 
   useEffect(() => {
@@ -159,10 +154,7 @@ export default function StudentInterviewScreen() {
         <Wide>
           <View style={[styles.layout, isWide && styles.layoutwide]}>
             <View style={[styles.peoplepane, isWide && styles.peoplepanewide]}>
-              <Text style={styles.title}>Interview Residents</Text>
-              <Text style={styles.subtitle}>
-                {completedChats}/{interviewPersonas.length} chats started
-              </Text>
+              <Text style={styles.title}>Interview Seniors</Text>
               <View style={styles.personagrid}>
                 {interviewPersonas.map((persona) => {
                   const selected = persona.id === activePersona.id;
@@ -179,7 +171,14 @@ export default function StudentInterviewScreen() {
                         pressed && { opacity: 0.86 },
                       ]}
                     >
-                      <Text style={styles.personaemoji}>{persona.emoji}</Text>
+                      <View
+                        style={[
+                          styles.personaavatar,
+                          { backgroundColor: persona.avatarColor },
+                        ]}
+                      >
+                        <Text style={styles.personaemoji}>{persona.name.charAt(0)}</Text>
+                      </View>
                       <View style={styles.personatextblock}>
                         <Text
                           style={[
@@ -216,7 +215,7 @@ export default function StudentInterviewScreen() {
               <View style={styles.chatheader}>
                 <View>
                   <Text style={styles.chatname}>
-                    {activePersona.emoji} {activePersona.name}
+                    {activePersona.name}
                   </Text>
                   <Text style={styles.chatmeta}>Age {activePersona.age}</Text>
                 </View>
@@ -274,7 +273,7 @@ export default function StudentInterviewScreen() {
 
           {shoppingUnlocked === true ? (
             <Btn
-              label="Continue to Shopping →"
+              label="Continue to Plan Logistics →"
               onPress={() => router.push('/student/shopping')}
               color={c.purple}
               textColor={c.white}
@@ -282,7 +281,7 @@ export default function StudentInterviewScreen() {
             />
           ) : (
             <View style={styles.lockbox}>
-              <Text style={styles.locktext}>Shopping unlocks when teacher is ready</Text>
+              <Text style={styles.locktext}>Plan Logistics unlocks when teacher is ready</Text>
             </View>
           )}
         </Wide>
@@ -322,14 +321,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: c.navy,
   },
-  subtitle: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 13,
-    color: c.grey,
-    marginTop: 3,
-    marginBottom: 12,
-  },
   personagrid: {
+    marginTop: 14,
     gap: 10,
   },
   personacard: {
@@ -347,9 +340,15 @@ const styles = StyleSheet.create({
     borderColor: c.teal,
     backgroundColor: '#E9FBFA',
   },
-  personaemoji: {
-    fontSize: 28,
+  personaavatar: {
     width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  personaemoji: {
+    fontSize: 23,
     textAlign: 'center',
   },
   personatextblock: {

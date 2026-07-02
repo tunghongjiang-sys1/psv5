@@ -1,9 +1,8 @@
-// app/student/name.tsx
+
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, useWindowDimensions, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, set } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
+import { db, ref, set } from '../../lib/firebaseConfig';
 import { usefb, fw, c } from '../../lib/helpers';
 import { studentState } from '../../lib/students';
 
@@ -27,7 +26,6 @@ export default function StudentEntryScreen() {
     );
   }
 
-  // If there is no active session or status is not 'active'
   if (!activeSession || activeSession.status !== 'active') {
     return (
       <SafeAreaView style={styles.waitingroot}>
@@ -57,7 +55,6 @@ export default function StudentEntryScreen() {
     }
     if (loading) return;
 
-    // Check if name is taken
     const existing = studentsData ? Object.values(studentsData) : [];
     const taken = existing.some(
       (s: any) => s.name?.trim().toLowerCase() === trimmed.toLowerCase()
@@ -80,11 +77,13 @@ export default function StudentEntryScreen() {
           borrowed: {},
           chats: {},
           reflection: '',
+          reflections: {},
+          whiteboard: '',
+          rating: 0,
           submitted: false,
         })
       );
 
-      // Save student state globally
       studentState.set({
         studentId: sid,
         sessionId: activeSession.id,
@@ -102,7 +101,7 @@ export default function StudentEntryScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Header bar */}
+
       <View style={styles.navbar}>
         <Pressable onPress={() => router.replace('/')} style={styles.navbarback}>
           <Text style={styles.navbarbacktext}>← Back</Text>

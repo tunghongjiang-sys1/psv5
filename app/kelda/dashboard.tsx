@@ -1,4 +1,4 @@
-// app/kelda/dashboard.tsx
+
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -8,7 +8,7 @@ import { Mascot, PsIcon, Wide, Btn } from '../../components/parts';
 export default function TeacherHomeScreen() {
   const router = useRouter();
   const session = usefb('activeSession');
-  // students data
+  
   const studdata = usefb(session?.id ? `sessions/${session.id}/students` : null);
   const stud = studdata ? Object.values(studdata) : [];
   const totalstud = stud.length;
@@ -75,7 +75,7 @@ export default function TeacherHomeScreen() {
                   </View>
                 </View>
                 <View style={styles.statusrow}>
-                  <Text style={styles.statuslabelname}>Shopping Phase:</Text>
+                  <Text style={styles.statuslabelname}>Plan Logistics Phase:</Text>
                   <View style={styles.statusvalrow}>
                     <Text style={[styles.statusval, unlocked?.shopping ? styles.valunlocked : styles.vallocked]}>
                       {unlocked?.shopping ? 'Unlocked' : 'Locked'}

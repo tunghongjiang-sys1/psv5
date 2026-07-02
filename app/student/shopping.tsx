@@ -1,9 +1,8 @@
-// app/student/shopping.tsx
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, useWindowDimensions, SafeAreaView, Image, ImageSourcePropType } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, update } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
+import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, itemsbuy, itemsbor, c } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, PsIcon, Wide, Btn } from '../../components/parts';
@@ -77,7 +76,6 @@ export default function StudentShoppingScreen() {
   const { studentId, sessionId } = useStudentState();
   const { width } = useWindowDimensions();
 
-  // Redirect if state not set
   useEffect(() => {
     if (!studentId || !sessionId) {
       router.replace('/student/name');
@@ -102,7 +100,6 @@ export default function StudentShoppingScreen() {
     }
   }, [fbBought, fbBorrowed]);
 
-  // Sync state if Firebase changes after initialization
   useEffect(() => {
     if (initialised.current) {
       if (fbBought) setBought(fbBought);
@@ -113,11 +110,33 @@ export default function StudentShoppingScreen() {
   const spent = itemsbuy.reduce((acc, item) => acc + (bought[item.id] || 0) * item.price, 0);
   const remaining = budget - spent;
 
+  const [showNotEnoughMoney, setShowNotEnoughMoney] = useState(false);
+  const notEnoughTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerNotEnoughMoney = useCallback(() => {
+    setShowNotEnoughMoney(true);
+    if (notEnoughTimerRef.current) {
+      clearTimeout(notEnoughTimerRef.current);
+    }
+    notEnoughTimerRef.current = setTimeout(() => {
+      setShowNotEnoughMoney(false);
+      notEnoughTimerRef.current = null;
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (notEnoughTimerRef.current) {
+        clearTimeout(notEnoughTimerRef.current);
+      }
+    };
+  }, []);
+
   const updateBuy = useCallback(
     async (item: any, delta: number) => {
       const next = Math.max(0, (bought[item.id] || 0) + delta);
       if (delta > 0 && item.price > remaining) {
-        Alert.alert('Not enough budget!');
+        triggerNotEnoughMoney();
         return;
       }
       setBought((prev: any) => ({ ...prev, [item.id]: next }));
@@ -125,7 +144,7 @@ export default function StudentShoppingScreen() {
         [item.id]: next,
       });
     },
-    [bought, remaining, sessionId, studentId]
+    [bought, remaining, sessionId, studentId, triggerNotEnoughMoney]
   );
 
   const updateBorrow = useCallback(
@@ -145,10 +164,18 @@ export default function StudentShoppingScreen() {
   const isDesktop = width >= 1100;
   const shopCardWidth = isDesktop ? '18%' : isTablet ? '22%' : '44%';
 
+  const categories = ['Stationery & Craft', 'Food & Drinks', 'Household & Personal Care', 'Activities & Events'];
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Shopping" />
+      <ProgressBar step="Plan Logistics" />
+
+      {showNotEnoughMoney && (
+        <View style={styles.notenoughbanner}>
+          <PsIcon name="forbidden" size={18} />
+          <Text style={styles.notenoughtext}>Not enough money</Text>
+        </View>
+      )}
 
       <View style={styles.budgetheader}>
         <PsIcon name="money" size={24} />
@@ -157,37 +184,12 @@ export default function StudentShoppingScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         <Wide>
-          <View style={styles.sectiontitlewithicon}>
-            <PsIcon name="grocery" size={22} />
-            <Text style={styles.sectiontitle}>Buy Items</Text>
-          </View>
-          <View style={styles.buygrid}>
-            {itemsbuy.map((item) => (
-              <View key={item.id} style={[styles.buycard, { width: shopCardWidth }]}>
-                <Image
-                  source={BUY_IMAGES[item.id as keyof typeof BUY_IMAGES] || require('../../assets/mascot.png')}
-                  style={styles.itemimage}
-                />
-                <View style={styles.counterrow}>
-                  <Pressable
-                    onPress={() => updateBuy(item, -1)}
-                    style={styles.counterbutton}
-                  >
-                    <Text style={styles.counterbuttontext}>-</Text>
-                  </Pressable>
-                  <Text style={styles.countervalue}>{bought[item.id] || 0}</Text>
-                  <Pressable
-                    onPress={() => updateBuy(item, 1)}
-                    style={[styles.counterbutton, { backgroundColor: c.teal }]}
-                  >
-                    <Text style={styles.counterbuttontext}>+</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
+
+          <View style={styles.sectionheadercontainer}>
+            <Text style={styles.plainsectiontitle}>Active Aging Centre</Text>
+            <Text style={styles.sectionsubtitle}>Borrow resources and equipment for free from the centre</Text>
           </View>
 
-          <Text style={styles.plainsectiontitle}>Borrow Items</Text>
           <View style={styles.borrowgrid}>
             {itemsbor.map((item) => {
               const borrowedCount = borrowed[item.id] || 0;
@@ -232,18 +234,63 @@ export default function StudentShoppingScreen() {
             })}
           </View>
 
+
+          <View style={[styles.sectionheadercontainer, { marginTop: 24 }]}>
+            <View style={styles.sectiontitlewithicon}>
+              <PsIcon name="grocery" size={22} />
+              <Text style={styles.sectiontitle}>Items to be Bought</Text>
+            </View>
+            <Text style={styles.sectionsubtitle}>Purchase additional items using your allocated budget</Text>
+          </View>
+
+          {categories.map((cat) => {
+            const catItems = itemsbuy.filter((i: any) => i.category === cat);
+            if (catItems.length === 0) return null;
+
+            return (
+              <View key={cat} style={styles.categoryblock}>
+                <Text style={styles.categorytitle}>{cat}</Text>
+                <View style={styles.buygrid}>
+                  {catItems.map((item) => (
+                    <View key={item.id} style={[styles.buycard, { width: shopCardWidth }]}>
+                      <Image
+                        source={BUY_IMAGES[item.id as keyof typeof BUY_IMAGES] || require('../../assets/mascot.png')}
+                        style={styles.itemimage}
+                      />
+                      <View style={styles.counterrow}>
+                        <Pressable
+                          onPress={() => updateBuy(item, -1)}
+                          style={styles.counterbutton}
+                        >
+                          <Text style={styles.counterbuttontext}>-</Text>
+                        </Pressable>
+                        <Text style={styles.countervalue}>{bought[item.id] || 0}</Text>
+                        <Pressable
+                          onPress={() => updateBuy(item, 1)}
+                          style={[styles.counterbutton, { backgroundColor: c.teal }]}
+                        >
+                          <Text style={styles.counterbuttontext}>+</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            );
+          })}
+
           {reflectionsUnlocked === true ? (
             <Btn
               label="Continue to Reflections →"
               onPress={() => router.push('/student/reflections')}
               color={c.purple}
               textColor={c.white}
-              style={{ marginTop: 16 }}
+              style={{ marginTop: 24 }}
             />
           ) : (
             <View style={styles.lockbox}>
               <Text style={styles.locktext}>
-                ⏳ Reflections unlocks when teacher is ready
+                Reflections unlocks when teacher is ready
               </Text>
             </View>
           )}
@@ -268,35 +315,69 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  notenoughbanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FDECEA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5C6C0',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  notenoughtext: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 14,
+    color: '#B23A2F',
+  },
   budgetleft: {
     fontFamily: 'DMSans_700Bold',
     fontSize: 22,
     color: c.navy,
   },
+  sectionheadercontainer: {
+    marginBottom: 14,
+  },
+  sectionsubtitle: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 13,
+    color: c.grey,
+    marginTop: 2,
+  },
+  categoryblock: {
+    marginBottom: 18,
+    backgroundColor: '#FAFAFD',
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EEF0F6',
+  },
+  categorytitle: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+    color: c.purpleMid,
+    marginBottom: 10,
+  },
   sectiontitle: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 18,
+    fontSize: 20,
     color: c.navy,
   },
   plainsectiontitle: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 18,
+    fontSize: 20,
     color: c.navy,
-    marginBottom: 16,
-    marginTop: 8,
   },
   sectiontitlewithicon: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
-    marginTop: 8,
   },
   buygrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 32,
   },
   buycard: {
     minWidth: 130,

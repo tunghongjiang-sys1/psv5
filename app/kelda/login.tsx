@@ -1,4 +1,4 @@
-// app/kelda/login.tsx
+
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';

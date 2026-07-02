@@ -1,4 +1,4 @@
-// app/kelda/submissions.tsx
+
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -68,7 +68,7 @@ export default function KeldaSubmissionsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Header bar */}
+
       <View style={styles.navbar}>
         <Pressable onPress={() => router.replace('/kelda/dashboard')} style={styles.backbutton}>
           <Text style={styles.backtext}>← Back</Text>
@@ -154,11 +154,11 @@ export default function KeldaSubmissionsScreen() {
                       <Text style={styles.statlabel}>Bought</Text>
                     </View>
                     <View style={styles.statminicard}>
-                      <Text style={styles.statval}>🌱 {borrowedCount}</Text>
+                      <Text style={styles.statval}>{borrowedCount}</Text>
                       <Text style={styles.statlabel}>Borrowed</Text>
                     </View>
                     <View style={styles.statminicard}>
-                      <Text style={styles.statval}>💬 {chatCount}</Text>
+                      <Text style={styles.statval}>{chatCount}</Text>
                       <Text style={styles.statlabel}>Chats</Text>
                     </View>
                     <View style={styles.statminicard}>
