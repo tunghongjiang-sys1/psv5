@@ -24,12 +24,8 @@ export default function WelcomeScreen() {
           style={{ width: wide ? 130 : 110, height: (wide ? 130 : 110) * 1.25 }}
           resizeMode="contain"
         />
-        <Text style={[styles.title, { fontSize: wide ? 64 : 56, lineHeight: wide ? 68 : 60 }]}>
-          LOOPIE{'\n'}TOWN
-        </Text>
-        <Text style={styles.subtitle}>
-          From Ideas to Impact
-        </Text>
+        <Text style={[styles.title, { fontSize: wide ? 64 : 56, lineHeight: wide ? 68 : 60 }]}>LOOPIE TOWN</Text>
+        <Text style={styles.subtitle}>From Ideas to Impact</Text>
         <View style={styles.buttoncontainer}>
           <Pressable
             onPress={() => router.push('/student/name')}
