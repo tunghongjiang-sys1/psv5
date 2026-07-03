@@ -1,6 +1,6 @@
-// app/kelda/student-detail.tsx
+
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usefb, itemsbuy, itemsbor, defpers, c } from '../../lib/helpers';
 import { Wide, PsIcon } from '../../components/parts';
@@ -10,7 +10,6 @@ export default function KeldaStudentDetailScreen() {
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
   const activeSession = usefb('activeSession');
 
-  // Load student detail and full students list (to map preferred group IDs to names)
   const student = usefb(
     activeSession?.id && studentId ? `sessions/${activeSession.id}/students/${studentId}` : null
   );
@@ -44,7 +43,6 @@ export default function KeldaStudentDetailScreen() {
 
   const students = studentsData ? Object.values(studentsData) : [];
 
-  // Map preferred student IDs to names
   const preferredGroupIds: string[] = student.preferredGroup || [];
   const preferredNames = preferredGroupIds
     .map((id) => {
@@ -56,7 +54,6 @@ export default function KeldaStudentDetailScreen() {
   const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
   const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
 
-  // Parse chat dialogue
   const getChatMessages = (pid: string): { role: string; content: string }[] => {
     const raw = student.chats?.[pid];
     if (!raw) return [];
@@ -69,7 +66,6 @@ export default function KeldaStudentDetailScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Header bar */}
       <View style={styles.navbar}>
         <Pressable onPress={() => router.replace('/kelda/submissions')} style={styles.backbutton}>
           <Text style={styles.backtext}>← Back</Text>
@@ -79,7 +75,6 @@ export default function KeldaStudentDetailScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
         <Wide>
-          {/* Header Info */}
           <View style={styles.profileheadercard}>
             <Text style={styles.profilename}>{student.name}</Text>
             <View style={styles.metarow}>
@@ -101,15 +96,13 @@ export default function KeldaStudentDetailScreen() {
             </View>
           </View>
 
-          {/* Preferred Grouping */}
           <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>🤝 Preferred Group Members</Text>
+            <Text style={styles.sectiontitle}>Preferred Group Members</Text>
             <Text style={styles.sectioncontent}>
               {preferredNames || 'No preferences selected'}
             </Text>
           </View>
 
-          {/* Items bought & borrowed */}
           <View style={styles.shoppingsection}>
             <View style={[styles.sectioncard, { flex: 1 }]}>
               <View style={styles.sectiontitlerow}>
@@ -121,30 +114,29 @@ export default function KeldaStudentDetailScreen() {
               ) : (
                 boughtItems.map((i) => (
                   <Text key={i.id} style={styles.itemrow}>
-                    {i.emoji} {i.name} x{student.bought[i.id]}
+                    {i.name} x{student.bought[i.id]}
                   </Text>
                 ))
               )}
             </View>
 
             <View style={[styles.sectioncard, { flex: 1 }]}>
-              <Text style={styles.sectiontitle}>🌱 Items Borrowed</Text>
+              <Text style={styles.sectiontitle}>Items Borrowed</Text>
               {borrowedItems.length === 0 ? (
                 <Text style={styles.emptytext}>Nothing borrowed</Text>
               ) : (
                 borrowedItems.map((i) => (
                   <Text key={i.id} style={styles.itemrow}>
-                    {i.emoji} {i.name} x{student.borrowed[i.id]}
+                    {i.name} x{student.borrowed[i.id]}
                   </Text>
                 ))
               )}
             </View>
           </View>
 
-          {/* Elder Chats */}
           <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>💬 Conversations with Residents</Text>
-            <Text style={styles.chatsectiondesc}>Tapping on a resident below reveals their chat log.</Text>
+            <Text style={styles.sectiontitle}>Conversations with Seniors</Text>
+            <Text style={styles.chatsectiondesc}>Tapping on a senior below reveals their chat log.</Text>
             {defpers.map((p) => {
               const messages = getChatMessages(p.id);
               const isOpen = openChatPersona === p.id;
@@ -158,14 +150,14 @@ export default function KeldaStudentDetailScreen() {
                     disabled={!hasChat}
                   >
                     <Text style={styles.chatpersonaname}>
-                      {p.emoji} {p.name}
+                      {p.name}
                     </Text>
                     {hasChat ? (
                       <Text style={styles.chattoggleindicator}>
                         {isOpen ? '▲ Hide Log' : '▼ View Log'} ({messages.length} msgs)
                       </Text>
                     ) : (
-                      <Text style={styles.nochattext}>No chat started</Text>
+                      <Text style={styles.nochattext}>Not started</Text>
                     )}
                   </Pressable>
 
@@ -192,16 +184,55 @@ export default function KeldaStudentDetailScreen() {
             })}
           </View>
 
-          {/* Reflection */}
           <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>📝 Final Reflection</Text>
+            <Text style={styles.sectiontitle}>Reflections Summary</Text>
             <View style={styles.reflectionbox}>
-              <Text style={styles.reflectionprompt}>
-                What have you learnt from this experience?
-              </Text>
-              <Text style={styles.reflectioncontent}>
-                {student.reflection || 'No reflection submitted yet'}
-              </Text>
+              {student.reflections ? (
+                Object.entries(student.reflections).map(([idx, ans]: [string, any]) => (
+                  <View key={idx} style={{ marginBottom: 8 }}>
+                    <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 13, color: c.navy }}>Q{Number(idx) + 1}:</Text>
+                    <Text style={styles.reflectioncontent}>{String(ans || '(No answer)')}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.reflectioncontent}>
+                  {student.reflection || 'No reflection submitted yet'}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          {!!student.whiteboardNotes && (
+            <View style={styles.sectioncard}>
+              <Text style={styles.sectiontitle}>Whiteboard Notes</Text>
+              <View style={styles.reflectionbox}>
+                <Text style={styles.reflectioncontent}>{student.whiteboardNotes}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.sectioncard}>
+            <Text style={styles.sectiontitle}>Student Rating</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              {student.rating ? (
+                <>
+                  {[1, 2, 3, 4, 5].map((val) => (
+                    <Image
+                      key={val}
+                      source={val <= student.rating ? require('../../assets/mascot.png') : require('../../assets/icons for ps/complete.png')}
+                      style={{ width: 24, height: 24, opacity: val <= student.rating ? 1 : 0.3 }}
+                      resizeMode="contain"
+                    />
+                  ))}
+                  <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 16, color: c.orange }}>
+                    {student.rating} / 5 Loopies
+                  </Text>
+                </>
+              ) : (
+                <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: c.grey }}>
+                  No rating given yet
+                </Text>
+              )}
             </View>
           </View>
         </Wide>

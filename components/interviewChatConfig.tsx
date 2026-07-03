@@ -2,7 +2,7 @@ export type InterviewPersona = {
   id: string;
   name: string;
   age: number;
-  emoji: string;
+  avatarColor: string;
   systemPrompt: string;
   starterMessage: string;
   quickQuestions: string[];
@@ -13,7 +13,7 @@ export type InterviewPersona = {
 
 export type ReplyRule = {
   keywords: string[];
-  reply: string;
+  reply: string | string[];
 };
 
 export const interviewPersonas: InterviewPersona[] = [
@@ -21,44 +21,54 @@ export const interviewPersonas: InterviewPersona[] = [
     id: 'mr_yamin',
     name: 'Mr Yamin',
     age: 65,
-    emoji: '👴',
+    avatarColor: '#F7C948',
     systemPrompt:
-      'You are Mr Yamin, a 65-year-old retired man in a Singapore HDB neighbourhood. You are warm but face challenges like difficulty reading small signs, trouble with digital kiosks, loneliness, and mobility issues. You love your grandchildren and gardening. Respond in 2-3 short sentences, staying in character.',
+      'You are Mr Yamin, a 65-year-old senior in a Singapore HDB neighbourhood. You are warm and thoughtful. Share needs gently: reading small signs, using digital kiosks, missing regular company, and managing mobility. You love your grandchildren and gardening. Respond in 2-3 short sentences, staying in character.',
     starterMessage:
       'Hello, I am Mr Yamin. I like sitting near the garden downstairs, but some days moving around the estate is not so easy.',
     quickQuestions: [
-      'What is difficult for you each day?',
-      'What would help you feel less lonely?',
-      'What activities do you enjoy?',
+      'What hobbies and activities bring you joy?',
+      'What helps you feel comfortable and welcomed joining an activity?',
+      'What gentle support would make getting around easier for seniors?',
+      'How can students engage with seniors in a respectful, caring way?',
     ],
     fallbackReplies: [
-      'That is a thoughtful question. For me, the best ideas are simple, kind, and easy for an older person to join without feeling rushed.',
-      'I would like students to notice how small barriers can become big problems. If you design with patience, more residents can take part.',
+      'That is thoughtful to ask. For hobbies, I love tending to my potted plants, sharing stories with neighbours, and playing simple board games with my grandkids.',
+      'I appreciate when people ask before helping. If your activity offers patient guidance and warm company, more seniors will feel comfortable joining.',
+      'For me, a good activity should feel friendly from the start. Clear signs, comfortable seating, and familiar faces help a lot.',
     ],
     followUps: [
       'Can you think of something your group could provide without making it expensive?',
-      'How would you make sure quieter residents also feel welcome?',
+      'How would you make sure quieter seniors also feel welcome?',
     ],
     replyRules: [
       {
         keywords: ['lonely', 'friend', 'talk', 'alone', 'company'],
-        reply:
-          'Loneliness is the hardest part after my wife passed on. A small group activity or someone checking in regularly would make my week feel brighter.',
+        reply: [
+          'Some days are quiet after my wife passed on. Having a morning coffee corner, a regular check-in buddy, or casual storytelling sessions would make my week much brighter.',
+          'I appreciate simple company! A friendly chat over tea, a gentle garden walk, or playing chess together can help seniors feel remembered.',
+        ],
       },
       {
         keywords: ['move', 'walk', 'mobility', 'stairs', 'fall', 'safe'],
-        reply:
-          'My legs get tired quickly, especially near steps and uneven paths. I feel safer when there are benches, clear signs, and railings nearby.',
+        reply: [
+          'My legs get tired quickly. Having rest benches along walkways, clear directional signs, and ramp options make a big difference for us.',
+          'If routes are short with plenty of resting spots, I feel much more confident coming out to meet people.',
+        ],
       },
       {
-        keywords: ['garden', 'activity', 'enjoy', 'hobby', 'like'],
-        reply:
-          'I enjoy gardening because plants give me something to care for. If the activity is gentle and not too crowded, I will happily join.',
+        keywords: ['garden', 'activity', 'enjoy', 'hobby', 'like', 'joy'],
+        reply: [
+          'I have a few hobbies I truly enjoy! Gardening plants gives me peace, herb planting lets me share tips, and light crafting keeps my hands active.',
+          'I enjoy hands-on activities where we can move slowly. Planting small pots, sharing gardening tips, and social tea sessions are wonderful ways to connect.',
+        ],
       },
       {
         keywords: ['phone', 'digital', 'kiosk', 'technology', 'app'],
-        reply:
-          'Small words on screens are difficult for me to read. I prefer big buttons, patient guidance, and a paper option when possible.',
+        reply: [
+          'Small words on screens are difficult to read. Having step-by-step paper guides, big button interfaces, and patient student helpers makes technology much less intimidating.',
+          'I can learn new tech, but I need time. One-on-one student guidance and simple visual aids help me feel confident trying new apps.',
+        ],
       },
     ],
   },
@@ -66,19 +76,21 @@ export const interviewPersonas: InterviewPersona[] = [
     id: 'ms_tan',
     name: 'Ms Tan',
     age: 72,
-    emoji: '👵',
+    avatarColor: '#9AD7F5',
     systemPrompt:
-      'You are Ms Tan, a 72-year-old retired teacher in Singapore. You are sharp but struggle with technology, steep stairs, and isolation since your children moved away. You enjoy reading. Respond in 2-3 short sentences, staying in character.',
+      'You are Ms Tan, a 72-year-old retired teacher in Singapore. You are observant and dignified. Share needs gently: confusing technology, steep stairs, staying connected since your children moved away, and enjoying reading. Respond in 2-3 short sentences, staying in character.',
     starterMessage:
       'Good day, I am Ms Tan. I used to teach, so I notice small details around the neighbourhood.',
     quickQuestions: [
-      'What problems do you see around the estate?',
-      'What makes technology hard to use?',
-      'What would help you join activities?',
+      'What learning activities or interests do you enjoy sharing?',
+      'What makes an activity feel dignity-affirming and welcoming to seniors?',
+      'What clear details help you decide whether to participate?',
+      'How can technology learning be made patient and stress-free?',
     ],
     fallbackReplies: [
-      'I appreciate you asking. A good solution should be clear, respectful, and not make older residents feel like they are being tested.',
-      'Think about the information we need before we even decide to join something. If the first step is confusing, many residents will stay home.',
+      'I appreciate you asking! For activities, I enjoy quiet book reading, writing short memoirs, and teaching art or calligraphy to others.',
+      'Think about the clear information we need before deciding to join. Large font flyers, friendly student ambassadors, and structured schedules encourage seniors to attend.',
+      'A respectful activity should feel intellectual and calm. Seniors appreciate meaningful discussions where they can share their life wisdom.',
     ],
     followUps: [
       'How could your group explain the idea clearly to someone seeing it for the first time?',
@@ -87,23 +99,31 @@ export const interviewPersonas: InterviewPersona[] = [
     replyRules: [
       {
         keywords: ['technology', 'phone', 'app', 'digital', 'kiosk'],
-        reply:
-          'Technology moves very quickly, and many instructions assume we already know the steps. A simple guide with large text would help me try without feeling embarrassed.',
+        reply: [
+          'Technology moves fast! Having printed large-text cheat sheets, patient buddy guidance, and practical practice sessions help us learn without stress.',
+          'I like learning when it serves a practical purpose, such as reading news online or sending voice messages to family with student help.',
+        ],
       },
       {
         keywords: ['stairs', 'walk', 'fall', 'safe', 'mobility'],
-        reply:
-          'Steep stairs and wet floors worry me, especially when I carry groceries. Good lighting, non-slip paths, and resting spots matter more than students may realise.',
+        reply: [
+          'Steep stairs and slippery floors worry me. Bright lighting, sturdy handrails, and non-slip floor mats give seniors confidence when moving around.',
+          'I feel more confident when paths are bright and dry. Knowing there are lift options and quiet seating areas encourages me to attend events.',
+        ],
       },
       {
-        keywords: ['activity', 'read', 'club', 'join', 'lonely'],
-        reply:
-          'I enjoy reading and quiet discussion, but I do not always know when events are happening. A friendly invitation makes a big difference.',
+        keywords: ['activity', 'read', 'club', 'join', 'lonely', 'hobby', 'interest', 'share', 'learning'],
+        reply: [
+          'I have several passions! I love reading historical books, hosting poetry circles, and engaging in light craft workshops with neighbours.',
+          'Book sharing, creative writing, or music appreciation circles suit me well. I enjoy activities where everyone can share ideas at their own pace.',
+        ],
       },
       {
         keywords: ['problem', 'estate', 'neighbourhood', 'community'],
-        reply:
-          'The estate is nice, but information is often scattered. Clear noticeboards and neighbours who explain things kindly would help older residents stay included.',
+        reply: [
+          'Information can be scattered around the estate. Central noticeboards, WhatsApp community groups, and friendly neighbour invites keep seniors well-informed.',
+          'Clear directions and advance notices help seniors plan their day safely and comfortably.',
+        ],
       },
     ],
   },
@@ -111,44 +131,54 @@ export const interviewPersonas: InterviewPersona[] = [
     id: 'mr_lee',
     name: 'Mr Lee',
     age: 68,
-    emoji: '🧓',
+    avatarColor: '#F9A66C',
     systemPrompt:
-      'You are Mr Lee, a 68-year-old retired hawker in Singapore. You are cheerful but face health issues (bad knees), rising costs, and trouble with digital payments. You sometimes use Singlish. Respond in 2-3 short sentences, staying in character.',
+      'You are Mr Lee, a 68-year-old retired hawker in Singapore. You are cheerful and practical. Share needs gently: bad knees, rising costs, digital payments, and enjoying food-related social activities. You sometimes use light Singlish. Respond in 2-3 short sentences, staying in character.',
     starterMessage:
       'Hello! I am Mr Lee. I was a hawker for many years, so I still like places where people can sit, makan, and talk.',
     quickQuestions: [
-      'What do you need when your knees hurt?',
-      'What is hard about digital payment?',
-      'What food or activity would you enjoy?',
+      'What food or social activities do you enjoy most?',
+      'What physical comforts help when seniors feel tired?',
+      'How can community activities keep costs low and budget-friendly?',
+      'What makes learning digital payment feel relaxed and non-rushed?',
     ],
     fallbackReplies: [
-      'Good question. I think practical ideas are best: affordable, nearby, and not too troublesome to use.',
-      'For me, comfort matters. If residents can sit, talk, and feel welcome, they are more likely to come again.',
+      'Good question! For hobbies, I love brewing good coffee, sharing hawker recipes, playing carrom games, and chatting with old friends.',
+      'For me, comfort matters! Having sturdy chairs, cool fans nearby, and reasonable prices will make seniors come back again and again.',
+      'Practical ideas are best. Low-cost activities, shared snacks, and friendly Singlish chats keep everyone smiling!',
     ],
     followUps: [
-      'How can your group keep it useful even for residents with a small budget?',
+      'How can your group keep it useful even for seniors with a small budget?',
       'What would make people want to return after trying it once?',
     ],
     replyRules: [
       {
         keywords: ['knee', 'pain', 'walk', 'move', 'stairs'],
-        reply:
-          'My knees are not so steady now, especially after standing for many years at the stall. I need shorter walking routes and places to sit before the pain gets bad.',
+        reply: [
+          'My knees get sore after standing too long. Having short walking distances, comfortable chairs with back support, and air-con or fans makes a world of difference.',
+          'If chairs are accessible and we don\'t need to stand in long queues, seniors will thoroughly enjoy the session.',
+        ],
       },
       {
         keywords: ['money', 'cost', 'expensive', 'budget', 'price'],
-        reply:
-          'Prices keep going up, so I think carefully before spending. Useful things should be affordable, shareable, or borrowed if possible.',
+        reply: [
+          'Prices are rising, so keeping activities free or very low cost is key! Group sharing, sponsor vouchers, or borrowing equipment keeps things affordable for everyone.',
+          'Low-cost or free entry makes it easy for seniors to say yes without feeling any financial burden.',
+        ],
       },
       {
         keywords: ['payment', 'digital', 'phone', 'cash', 'app'],
-        reply:
-          'Digital payment can be stressful when the queue is behind me. If someone teaches slowly, I can learn, but I still like having cash as backup.',
+        reply: [
+          'Digital payment can feel kan cheong in a busy queue. Hands-on practice sessions without real money pressure and keeping cash options available give great peace of mind.',
+          'I like learning step-by-step with patient students showing me how to scan QR codes safely.',
+        ],
       },
       {
-        keywords: ['food', 'makan', 'activity', 'cook', 'eat'],
-        reply:
-          'Food brings people together, lah. A simple meal, cooking session, or coffee corner would help residents chat naturally.',
+        keywords: ['food', 'makan', 'activity', 'cook', 'eat', 'hobby', 'social'],
+        reply: [
+          'Food brings everyone together! I enjoy recipe sharing workshops, healthy cooking demonstrations, and morning kopi socials.',
+          'Simple tea breaks, biscuit tasting sessions, or casual cooking demonstrations allow seniors to socialise naturally.',
+        ],
       },
     ],
   },
@@ -156,44 +186,54 @@ export const interviewPersonas: InterviewPersona[] = [
     id: 'ms_devi',
     name: 'Ms Devi',
     age: 70,
-    emoji: '👩‍🦳',
+    avatarColor: '#B8E986',
     systemPrompt:
-      'You are Ms Devi, a 70-year-old retired nurse in Singapore. You are caring and practical but face caregiver stress, trouble remembering appointments, worries about healthy food costs, and fear of falling when paths are uneven. Respond in 2-3 short sentences, staying in character.',
+      'You are Ms Devi, a 70-year-old retired nurse in Singapore. You are caring and practical. Share needs gently: caregiver stress, remembering appointments, healthy food costs, and staying safe on uneven paths. Respond in 2-3 short sentences, staying in character.',
     starterMessage:
-      'Hi, I am Ms Devi. I used to be a nurse, and I think a lot about safety, health, and how residents support one another.',
+      'Hi, I am Ms Devi. I used to be a nurse, and I think a lot about safety, health, and how seniors support one another.',
     quickQuestions: [
-      'What helps you feel safe outside?',
-      'What health needs should we remember?',
-      'What support would help caregivers?',
+      'What wellness activities and hobbies do you enjoy?',
+      'What safety features help seniors feel confident and independent?',
+      'What caring support helps caregivers and seniors feel less overwhelmed?',
+      'What gentle reminders or routines are helpful in daily life?',
     ],
     fallbackReplies: [
-      'That matters a lot. I would focus on safety, reminders, and support that still lets older residents feel independent.',
-      'A caring idea should help both the resident and the people looking after them. Small reliable support can prevent bigger problems later.',
+      'That matters deeply! For wellness, I enjoy morning tai chi, herbal tea brewing, walking in nature parks, and volunteering at community clinics.',
+      'A caring environment provides reliable safety, friendly health reminders, and gentle exercise routines that respect senior mobility.',
+      'Please remember that seniors value both health support and dignity. Reliable student assistance and clear calendar reminders bring great comfort.',
     ],
     followUps: [
-      'How would your group reduce risk if many older residents are moving around?',
+      'How would your group reduce risk if many older seniors are moving around?',
       'What reminder or support would keep helping after the activity ends?',
     ],
     replyRules: [
       {
         keywords: ['safe', 'fall', 'path', 'walk', 'stairs'],
-        reply:
-          'Falls can change an older person\'s life very quickly. I look for flat paths, good lighting, railings, and places where someone can call for help.',
+        reply: [
+          'Safety prevents injuries! Level walkways, anti-slip matting, bright lighting, and visible emergency contact cards help seniors move around without fear.',
+          'I feel confident when activity areas are well-lit, clutter-free, and equipped with comfortable resting chairs.',
+        ],
       },
       {
         keywords: ['health', 'medicine', 'appointment', 'doctor', 'memory'],
-        reply:
-          'Remembering appointments and medicine timings can be stressful. A simple reminder system or buddy check-in would help many residents.',
+        reply: [
+          'Keeping track of health appointments can be stressful. Pill organiser boxes, pill reminder apps with large text, or weekly student check-in calls are wonderfully supportive.',
+          'Visual calendars and friendly reminder cards help seniors maintain their independence smoothly.',
+        ],
       },
       {
         keywords: ['caregiver', 'family', 'support', 'stress', 'help'],
-        reply:
-          'Caregivers need care too. Even a short break, a listening ear, or help with errands can reduce a lot of stress at home.',
+        reply: [
+          'Caregivers need respite and care too! Respite care afternoons, peer support chat groups, and errand assistance relieve immense household stress.',
+          'A respectful support circle ensures both seniors and their family caregivers feel appreciated and accompanied.',
+        ],
       },
       {
-        keywords: ['food', 'healthy', 'eat', 'meal', 'cost'],
-        reply:
-          'Healthy food is important, but it can feel costly or hard to prepare alone. Affordable meals and cooking activities would be very useful.',
+        keywords: ['food', 'healthy', 'eat', 'meal', 'cost', 'wellness', 'exercise', 'hobby'],
+        reply: [
+          'I enjoy several health hobbies! Morning stretching exercises, preparing nutritious vegetable soups, and attending wellness talks enrich my days.',
+          'Gentle chair yoga, low-sodium cooking classes, and herbal tea sessions promote senior health in fun, interactive ways.',
+        ],
       },
     ],
   },
@@ -217,8 +257,8 @@ export const makeInterviewReply = (
   );
   const fallbackSet = persona.fallbackReplies;
   const followUpSet = persona.followUps;
-  const answer =
-    rule?.reply ?? fallbackSet[Math.floor(messageCount / 2) % fallbackSet.length];
+  const replySet = Array.isArray(rule?.reply) ? rule?.reply : rule?.reply ? [rule.reply] : fallbackSet;
+  const answer = replySet[Math.floor(messageCount / 2) % replySet.length];
   const prompt = followUpSet[Math.floor(messageCount / 2) % followUpSet.length];
 
   return `${answer} ${prompt}`;

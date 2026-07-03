@@ -1,4 +1,4 @@
-// components/Shared.tsx
+
 import React, { memo } from 'react';
 import { View, Text, Image, ImageSourcePropType, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { c } from '../lib/helpers';
@@ -57,7 +57,7 @@ export const Wide = ({ children, style }: { children?: React.ReactNode; style?: 
 };
 
 export const ProgressBar = memo(({ step }: { step: string }) => {
-  const steps = ['Groupings', 'Interview', 'Shopping', 'Reflections', 'Summary'];
+  const steps = ['Groupings', 'Interview', 'Logistics', 'Reflections', 'Whiteboard', 'Summary'];
   const idx = steps.indexOf(step);
   return (
     <View style={styles.progBarRoot}>

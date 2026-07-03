@@ -1,9 +1,8 @@
-// app/kelda/session.tsx
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, set, update, remove } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
+import { db, ref, set, update, remove } from '../../lib/firebaseConfig';
 import { usefb, fw, c, showConfirm, showAlert } from '../../lib/helpers';
 import { Wide, Btn, PsIcon } from '../../components/parts';
 
@@ -18,11 +17,17 @@ export default function KeldaSessionScreen() {
     activeSession?.id ? `sessions/${activeSession.id}` : null
   );
 
-  // Sync controls with active session locks
   const [interview, setInterview] = useState(false);
   const [shopping, setShopping] = useState(false);
   const [reflections, setReflections] = useState(false);
   const [summary, setSummary] = useState(false);
+
+  const [qList, setQList] = useState<string[]>([
+    'What did you learn about planning with seniors in mind?',
+    'Which idea from your group could make the biggest impact, and why?',
+    'What would you improve if you had more time?',
+  ]);
+  const [newQText, setNewQText] = useState('');
 
   useEffect(() => {
     if (sessionData?.unlocked) {
@@ -31,7 +36,41 @@ export default function KeldaSessionScreen() {
       setReflections(!!sessionData.unlocked.reflections);
       setSummary(!!sessionData.unlocked.summary);
     }
+    if (sessionData?.reflectionQuestions) {
+      const parsed = Array.isArray(sessionData.reflectionQuestions)
+        ? sessionData.reflectionQuestions
+        : Object.values(sessionData.reflectionQuestions);
+      setQList(parsed);
+    }
   }, [sessionData]);
+
+  const saveReflectionQuestions = async (updated: string[]) => {
+    if (!activeSession?.id) return;
+    try {
+      await update(ref(db, `sessions/${activeSession.id}`), {
+        reflectionQuestions: updated,
+      });
+      setQList(updated);
+    } catch (e: any) {
+      Alert.alert('Error saving questions', e.message);
+    }
+  };
+
+  const addQuestion = () => {
+    if (!newQText.trim()) return;
+    const next = [...qList, newQText.trim()];
+    saveReflectionQuestions(next);
+    setNewQText('');
+  };
+
+  const removeQuestion = (idx: number) => {
+    if (qList.length <= 1) {
+      Alert.alert('Must keep at least 1 question!');
+      return;
+    }
+    const next = qList.filter((_, i) => i !== idx);
+    saveReflectionQuestions(next);
+  };
 
   const startSession = async () => {
     if (starting) return;
@@ -112,7 +151,6 @@ export default function KeldaSessionScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      {/* Header bar */}
       <View style={styles.navbar}>
         <Pressable onPress={() => router.replace('/kelda/dashboard')} style={styles.backbutton}>
           <Text style={styles.backtext}>← Back</Text>
@@ -129,7 +167,6 @@ export default function KeldaSessionScreen() {
               <Text style={styles.infotitle}>Session ID: {activeSession.id}</Text>
               <Text style={styles.infosubtitle}>Configure what students can access in real-time.</Text>
 
-              {/* Phases */}
               <View style={styles.phasecard}>
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
@@ -141,7 +178,6 @@ export default function KeldaSessionScreen() {
                   </View>
                 </View>
 
-                {/* Interview */}
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>2. Interview/Map Phase</Text>
@@ -162,11 +198,10 @@ export default function KeldaSessionScreen() {
                   </Pressable>
                 </View>
 
-                {/* Shopping */}
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
-                    <Text style={styles.phasename}>3. Shopping Phase</Text>
-                    <Text style={styles.phasedesc}>Budget spending, buying and borrowing items</Text>
+                    <Text style={styles.phasename}>3. Plan Logistics Phase</Text>
+                    <Text style={styles.phasedesc}>Budget spending, buying and active aging centre borrowing</Text>
                   </View>
                   <Pressable
                     onPress={() => togglePhase('shopping', shopping)}
@@ -183,7 +218,6 @@ export default function KeldaSessionScreen() {
                   </Pressable>
                 </View>
 
-                {/* Reflections */}
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>4. Reflections Phase</Text>
@@ -204,11 +238,10 @@ export default function KeldaSessionScreen() {
                   </Pressable>
                 </View>
 
-                {/* Summary */}
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
-                    <Text style={styles.phasename}>5. Summary / Submit Phase</Text>
-                    <Text style={styles.phasedesc}>Confirm and finalize student submissions</Text>
+                    <Text style={styles.phasename}>5. Summary Phase</Text>
+                    <Text style={styles.phasedesc}>Confirm and finalize student submissions and ratings</Text>
                   </View>
                   <Pressable
                     onPress={() => togglePhase('summary', summary)}
@@ -222,6 +255,35 @@ export default function KeldaSessionScreen() {
                       {summary ? 'Unlocked' : 'Locked'}
                     </Text>
                     <PsIcon name={summary ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={[styles.phasecard, { marginTop: 16 }]}>
+                <Text style={styles.infotitle}>⚙️ Reflection Questions Config</Text>
+                <Text style={styles.infosubtitle}>Customize the questions presented to students on their reflection slides.</Text>
+
+                {qList.map((q, idx) => (
+                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
+                    <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 14, flex: 1, color: c.navy, paddingRight: 8 }}>
+                      {idx + 1}. {q}
+                    </Text>
+                    <Pressable onPress={() => removeQuestion(idx)} style={{ paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={{ fontFamily: 'DMSans_700Bold', color: c.red, fontSize: 13 }}>Remove</Text>
+                    </Pressable>
+                  </View>
+                ))}
+
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  <TextInput
+                    style={{ flex: 1, backgroundColor: c.offWhite, borderWidth: 1, borderColor: c.greyLight, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontFamily: 'DMSans_400Regular', fontSize: 13 }}
+                    value={newQText}
+                    onChangeText={setNewQText}
+                    placeholder="Type new reflection question..."
+                    placeholderTextColor={c.greyLight}
+                  />
+                  <Pressable onPress={addQuestion} style={{ backgroundColor: c.navy, borderRadius: 10, paddingHorizontal: 16, justifyContent: 'center' }}>
+                    <Text style={{ fontFamily: 'DMSans_700Bold', color: c.white, fontSize: 13 }}>+ Add</Text>
                   </Pressable>
                 </View>
               </View>

@@ -1,4 +1,4 @@
-// app/_layout.tsx
+
 import {
   DMSans_400Regular,
   DMSans_500Medium,

@@ -1,65 +1,85 @@
-// app/student/reflections.tsx
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert, Pressable, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ref, update } from 'firebase/database';
-import { db } from '../../lib/firebaseConfig';
-import { usefb, fw, c } from '../../lib/helpers';
+import { db, ref, update } from '../../lib/firebaseConfig';
+import { usefb, fw, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, Wide, Btn } from '../../components/parts';
 
 export default function StudentReflectionsScreen() {
   const router = useRouter();
   const { studentId, sessionId, studentName } = useStudentState();
-  const [myReflection, setMyReflection] = useState('');
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Redirect if state not set
   useEffect(() => {
     if (!studentId || !sessionId) {
       router.replace('/student/name');
     }
   }, [studentId, sessionId]);
 
+  const rawQuestions = usefb(sessionId ? `sessions/${sessionId}/reflectionQuestions` : null);
+  const questions = normalizeReflectionQuestions(rawQuestions);
+
   const summaryUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/summary` : null);
   const studentsData = usefb(sessionId ? `sessions/${sessionId}/students` : null);
 
   const students = studentsData ? Object.values(studentsData) : [];
-  const reflections = students.filter((s: any) => s.reflection);
+  const reflections = students.filter((s: any) => s.reflection || (s.reflections && Object.keys(s.reflections).length > 0));
 
   useEffect(() => {
     if (studentsData && studentId) {
       const mine = (studentsData as any)[studentId];
-      if (mine?.reflection && !submitted) {
-        setMyReflection(mine.reflection);
-        setSubmitted(true);
+      if (mine && !submitted) {
+        const initialAnswers: Record<number, string> = {};
+        questions.forEach((_, idx) => {
+          if (mine.reflections && mine.reflections[idx] !== undefined) {
+            initialAnswers[idx] = String(mine.reflections[idx]);
+          } else if (idx === 0 && mine.reflection) {
+            initialAnswers[idx] = String(mine.reflection);
+          } else {
+            initialAnswers[idx] = '';
+          }
+        });
+        setAnswers(initialAnswers);
+        if (mine.reflection || (mine.reflections && Object.keys(mine.reflections).length > 0)) {
+          setSubmitted(true);
+        }
       }
     }
-  }, [studentsData, studentId]);
+  }, [studentsData, studentId, questions.length]);
+
+  const handleTextChange = (text: string) => {
+    setAnswers((prev) => ({ ...prev, [currentSlide]: text }));
+  };
 
   const submitReflection = async () => {
-    if (!myReflection.trim()) {
-      Alert.alert('Write something first!');
+    const mainRef = answers[0]?.trim() || Object.values(answers).find((a) => a.trim()) || '';
+    if (!mainRef) {
+      Alert.alert('Please answer at least one question!');
       return;
     }
     setSaving(true);
     try {
       await fw(
         update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
-          reflection: myReflection.trim(),
+          reflection: mainRef,
+          reflections: answers,
         })
       );
       setSubmitted(true);
       setShowForm(false);
+      Alert.alert('Reflections Saved!', 'Your answers have been shared.');
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
     }
   };
-
 
   return (
     <SafeAreaView style={styles.root}>
@@ -68,81 +88,127 @@ export default function StudentReflectionsScreen() {
         <Wide>
           <View style={styles.headerrow}>
             <Text style={styles.title}>
-              View fellow students' reflections!
+              Student Reflections
             </Text>
-            {!submitted && !showForm && (
+            {!showForm && (
               <Pressable
-                onPress={() => setShowForm(true)}
+                onPress={() => {
+                  setShowForm(true);
+                  setCurrentSlide(0);
+                }}
                 style={({ pressed }) => [
                   styles.addbutton,
                   pressed && { opacity: 0.85 },
                 ]}
               >
-                <Text style={styles.addbuttontext}>+</Text>
+                <Text style={styles.addbuttontext}>{submitted ? 'Edit' : '+ Answer'}</Text>
               </Pressable>
             )}
           </View>
 
+
           {showForm && (
             <View style={styles.formcontainer}>
-              <Text style={styles.formname}>{studentName}:</Text>
-              <Text style={styles.formprompt}>
-                What have you learnt from this experience?
-              </Text>
+              <View style={styles.slideheader}>
+                <Text style={styles.slidenumber}>Question {currentSlide + 1} of {questions.length}</Text>
+                <View style={styles.dotsrow}>
+                  {questions.map((_, idx) => (
+                    <Pressable
+                      key={idx}
+                      onPress={() => setCurrentSlide(idx)}
+                      style={[styles.dot, currentSlide === idx && styles.activeDot]}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <Text style={styles.formprompt}>{questions[currentSlide]}</Text>
+
               <TextInput
                 style={styles.reflectioninput}
-                value={myReflection}
-                onChangeText={setMyReflection}
-                placeholder="Type in what you have learnt over here..."
+                value={answers[currentSlide] || ''}
+                onChangeText={handleTextChange}
+                placeholder="Type your reflection answer here..."
                 placeholderTextColor={c.greyLight}
                 multiline
               />
-              <View style={styles.formactions}>
-                {saving ? (
-                  <ActivityIndicator color={c.navy} />
+
+              <View style={styles.slideactions}>
+                <Pressable
+                  disabled={currentSlide === 0}
+                  onPress={() => setCurrentSlide((prev) => Math.max(0, prev - 1))}
+                  style={[styles.navbtn, currentSlide === 0 && styles.navbtndisabled]}
+                >
+                  <Text style={styles.navbtntext}>← Previous</Text>
+                </Pressable>
+
+                {currentSlide < questions.length - 1 ? (
+                  <Pressable
+                    onPress={() => setCurrentSlide((prev) => Math.min(questions.length - 1, prev + 1))}
+                    style={[styles.navbtn, styles.nextbtn]}
+                  >
+                    <Text style={[styles.navbtntext, styles.nextbtntext]}>Next Question →</Text>
+                  </Pressable>
                 ) : (
-                  <>
+                  saving ? (
+                    <ActivityIndicator color={c.navy} />
+                  ) : (
                     <Btn
-                      label="Submit →"
+                      label="Save All Answers ✓"
                       onPress={submitReflection}
                       color={c.yellow}
                       textColor={c.navy}
                     />
-                    <Pressable
-                      onPress={() => setShowForm(false)}
-                      style={styles.cancelbutton}
-                    >
-                      <Text style={styles.canceltext}>Cancel</Text>
-                    </Pressable>
-                  </>
+                  )
                 )}
               </View>
+
+              <Pressable
+                onPress={() => setShowForm(false)}
+                style={styles.cancelbutton}
+              >
+                <Text style={styles.canceltext}>Close Form</Text>
+              </Pressable>
             </View>
           )}
 
+
           {reflections.map((r: any) => {
             const isSelf = r.id === studentId;
+            const rAnswers = getReflectionAnswers(r, questions);
+
             return (
               <View
                 key={r.id}
                 style={[
                   styles.reflectioncard,
-                  { backgroundColor: isSelf ? c.teal : '#DDD' },
+                  { backgroundColor: isSelf ? c.teal : '#EEF2F6' },
                 ]}
               >
                 <Text style={[styles.cardname, { color: isSelf ? c.white : c.navy }]}>
-                  {isSelf ? 'You' : r.name}:
+                  {isSelf ? 'Your Reflections' : `${r.name}`}:
                 </Text>
-                <Text style={[styles.cardprompt, { color: isSelf ? c.white : c.navy }]}>
-                  What have you learnt from this experience?
-                </Text>
-                <Text style={[styles.cardtext, { color: isSelf ? c.white : c.black }]}>
-                  {r.reflection}
-                </Text>
+                {rAnswers.map(({ question, answer }, qIdx) => (
+                  <View key={qIdx} style={styles.qablock}>
+                    <Text style={[styles.cardprompt, { color: isSelf ? '#E0F7F5' : c.purpleMid }]}>
+                      Q{qIdx + 1}: {question}
+                    </Text>
+                    <Text style={[styles.cardtext, { color: isSelf ? c.white : c.black }]}>
+                      {answer || '(No answer provided)'}
+                    </Text>
+                  </View>
+                ))}
               </View>
             );
           })}
 
+          <Btn
+            label="Continue to Whiteboard →"
+            onPress={() => router.push('/student/whiteboard')}
+            color={c.purple}
+            textColor={c.white}
+            style={{ marginTop: 24 }}
+          />
         </Wide>
       </ScrollView>
     </SafeAreaView>
@@ -158,74 +224,114 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 22,
+    fontSize: 24,
     color: c.navy,
     flex: 1,
-    paddingRight: 12,
   },
   addbutton: {
     backgroundColor: c.teal,
-    width: 40,
-    height: 40,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   addbuttontext: {
-    fontSize: 24,
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 14,
     color: c.white,
-    lineHeight: 28,
   },
   formcontainer: {
-    backgroundColor: '#DDD',
+    backgroundColor: '#EBF3FA',
     borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: c.teal,
   },
-  formname: {
+  slideheader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  slidenumber: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 16,
-    color: c.navy,
+    fontSize: 14,
+    color: c.purpleMid,
+  },
+  dotsrow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: c.greyLight,
+  },
+  activeDot: {
+    backgroundColor: c.teal,
+    width: 18,
   },
   formprompt: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 14,
+    fontSize: 18,
     color: c.navy,
-    marginBottom: 12,
+    marginBottom: 14,
+    lineHeight: 24,
   },
   reflectioninput: {
-    backgroundColor: c.offWhite,
-    borderRadius: 12,
+    backgroundColor: c.white,
+    borderRadius: 14,
     padding: 14,
     fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
+    fontSize: 15,
     color: c.navy,
-    minHeight: 80,
+    minHeight: 110,
     marginBottom: 16,
     textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: '#D0D7DE',
   },
-  formactions: {
+  slideactions: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
   },
-  cancelbutton: {
-    paddingHorizontal: 20,
+  navbtn: {
+    paddingHorizontal: 16,
     paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: c.greyLight,
+  },
+  navbtndisabled: {
+    opacity: 0.4,
+  },
+  navbtntext: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 14,
+    color: c.navy,
+  },
+  nextbtn: {
+    backgroundColor: c.navy,
+  },
+  nextbtntext: {
+    color: c.white,
+  },
+  cancelbutton: {
+    alignSelf: 'center',
+    marginTop: 14,
   },
   canceltext: {
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: 'DMSans_500Medium',
     color: c.greyDark,
-    fontSize: 15,
+    fontSize: 13,
   },
   reflectioncard: {
     borderRadius: 20,
@@ -234,26 +340,20 @@ const styles = StyleSheet.create({
   },
   cardname: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 17,
+    fontSize: 18,
+    marginBottom: 12,
+  },
+  qablock: {
+    marginBottom: 10,
   },
   cardprompt: {
     fontFamily: 'DMSans_700Bold',
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 14,
   },
   cardtext: {
     fontFamily: 'DMSans_400Regular',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  lockbox: {
-    alignItems: 'center',
-    padding: 16,
-    gap: 8,
-  },
-  locktext: {
-    fontFamily: 'DMSans_500Medium',
-    color: c.grey,
-    fontSize: 13,
+    fontSize: 15,
+    marginTop: 4,
+    lineHeight: 20,
   },
 });

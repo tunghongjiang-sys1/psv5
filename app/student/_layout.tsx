@@ -1,4 +1,4 @@
-// app/student/_layout.tsx
+
 import React, { useEffect } from 'react';
 import { Stack, usePathname, useRouter } from 'expo-router'; import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { useStudentState } from '../../lib/students';
@@ -7,9 +7,10 @@ import { PsIcon } from '../../components/parts';
 
 const tabs = [
   { key: 'interview', label: 'Interview', href: '/student/interview' },
-  { key: 'shopping', label: 'Shopping', href: '/student/shopping' },
+  { key: 'shopping', label: 'Plan Logistics', href: '/student/shopping' },
   { key: 'reflections', label: 'Reflections', href: '/student/reflections' },
-  { key: 'summary', label: 'Submit', href: '/student/submit' },
+  { key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard' },
+  { key: 'summary', label: 'Summary', href: '/student/submit' },
 ];
 
 export default function StudentLayout() {
@@ -19,7 +20,6 @@ export default function StudentLayout() {
 
   const showTabBar = pathname !== '/student/name' && pathname !== '/student/groupings';
 
-  // Read unlocks in real time
   const interviewUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/interview` : null);
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
   const reflectionsUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/reflections` : null);
@@ -33,6 +33,8 @@ export default function StudentLayout() {
         return shoppingUnlocked === true;
       case 'reflections':
         return reflectionsUnlocked === true;
+      case 'whiteboard':
+        return reflectionsUnlocked === true || summaryUnlocked === true;
       case 'summary':
         return summaryUnlocked === true;
       default:

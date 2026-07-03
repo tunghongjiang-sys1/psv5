@@ -1,4 +1,4 @@
-// app/index.tsx
+
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -28,7 +28,7 @@ export default function WelcomeScreen() {
           LOOPIE{'\n'}TOWN
         </Text>
         <Text style={styles.subtitle}>
-          An empathy learning experience
+          From Ideas to Impact
         </Text>
         <View style={styles.buttoncontainer}>
           <Pressable
