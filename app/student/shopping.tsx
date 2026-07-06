@@ -168,7 +168,7 @@ export default function StudentShoppingScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Plan Logistics" />
+      <ProgressBar step="Logistics" />
 
       {showNotEnoughMoney && (
         <View style={styles.notenoughbanner}>

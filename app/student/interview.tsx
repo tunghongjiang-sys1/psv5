@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -53,6 +54,25 @@ const parseTranscript = (raw: string | null | undefined, persona: Persona): Chat
 
   return messages.length > 0 ? messages : getStarter(persona);
 };
+
+const getUniquePressedQuestions = (
+  messages: ChatMessage[],
+  persona: Persona
+): string[] => {
+  const allowed = new Set(persona.quickQuestions);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const m of messages) {
+    if (m.role !== 'user') continue;
+    const text = m.content.trim();
+    if (!allowed.has(text) || seen.has(text)) continue;
+    seen.add(text);
+    out.push(text);
+  }
+  return out;
+};
+
+export { parseTranscript, getUniquePressedQuestions };
 
 const serializeTranscript = (messages: ChatMessage[]) =>
   messages.map((m) => cleanForTranscript(m.content)).join('|||');
@@ -158,27 +178,26 @@ export default function StudentInterviewScreen() {
               <View style={styles.personagrid}>
                 {interviewPersonas.map((persona) => {
                   const selected = persona.id === activePersona.id;
-                  const hasChat = (messagesByPersona[persona.id] ?? []).some(
-                    (message) => message.role === 'user'
-                  );
+                  const messages = messagesByPersona[persona.id] ?? getStarter(persona);
+                  const pressed = getUniquePressedQuestions(messages, persona);
+                  const required = persona.quickQuestions.length;
+                  const progressLabel = `${pressed.length} / ${required}`;
+                  const isComplete = pressed.length >= required;
                   return (
                     <Pressable
                       key={persona.id}
                       onPress={() => setActivePersonaId(persona.id)}
-                      style={({ pressed }) => [
+                      style={({ pressed: pressedState }) => [
                         styles.personacard,
                         selected && styles.personacardactive,
-                        pressed && { opacity: 0.86 },
+                        pressedState && { opacity: 0.86 },
                       ]}
                     >
-                      <View
-                        style={[
-                          styles.personaavatar,
-                          { backgroundColor: persona.avatarColor },
-                        ]}
-                      >
-                        <Text style={styles.personaemoji}>{persona.name.charAt(0)}</Text>
-                      </View>
+                      <Image
+                        source={persona.photo}
+                        style={styles.personaavatar}
+                        resizeMode="cover"
+                      />
                       <View style={styles.personatextblock}>
                         <Text
                           style={[
@@ -196,13 +215,19 @@ export default function StudentInterviewScreen() {
                           ]}
                           numberOfLines={1}
                         >
-                          Age {persona.age}
+                          Age {persona.age} · {progressLabel}
                         </Text>
                       </View>
                       <View
                         style={[
                           styles.statusdot,
-                          { backgroundColor: hasChat ? c.green : c.greyLight },
+                          {
+                            backgroundColor: isComplete
+                              ? c.green
+                              : pressed.length > 0
+                                ? c.yellow
+                                : c.greyLight,
+                          },
                         ]}
                       />
                     </Pressable>
@@ -213,7 +238,12 @@ export default function StudentInterviewScreen() {
 
             <View style={styles.chatpane}>
               <View style={styles.chatheader}>
-                <View>
+                <Image
+                  source={activePersona.photo}
+                  style={styles.chatheaderphoto}
+                  resizeMode="cover"
+                />
+                <View style={styles.chatheadertext}>
                   <Text style={styles.chatname}>
                     {activePersona.name}
                   </Text>
@@ -341,15 +371,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E9FBFA',
   },
   personaavatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  personaemoji: {
-    fontSize: 23,
-    textAlign: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.greyLight,
   },
   personatextblock: {
     flex: 1,
@@ -393,8 +418,16 @@ const styles = StyleSheet.create({
     backgroundColor: c.navy,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
+  },
+  chatheaderphoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: c.navyLight,
+  },
+  chatheadertext: {
+    flex: 1,
   },
   chatname: {
     fontFamily: 'DMSans_700Bold',

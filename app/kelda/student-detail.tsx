@@ -1,9 +1,277 @@
-
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable, Image } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable, Image, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { usefb, itemsbuy, itemsbor, defpers, c } from '../../lib/helpers';
+import { usefb, itemsbuy, itemsbor, defpers, c, parseWhiteboardStrokes } from '../../lib/helpers';
 import { Wide, PsIcon } from '../../components/parts';
+
+type ReadOnlyWhiteboardProps = {
+  rawStrokes: any;
+};
+
+const WHITEBOARD_W = 700;
+const WHITEBOARD_H = 320;
+
+const ReadOnlyWhiteboard = ({ rawStrokes }: ReadOnlyWhiteboardProps) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const strokes = useMemo(() => parseWhiteboardStrokes(rawStrokes), [rawStrokes]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, WHITEBOARD_W, WHITEBOARD_H);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 3;
+    strokes.forEach((stroke) => {
+      if (!stroke.points || stroke.points.length < 2) return;
+      ctx.strokeStyle = stroke.color;
+      ctx.beginPath();
+      ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+      for (let i = 1; i < stroke.points.length; i++) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+      }
+      ctx.stroke();
+    });
+  }, [strokes]);
+
+  if (strokes.length === 0) {
+    return (
+      <View style={styles.reflectionbox}>
+        <Text style={styles.reflectioncontent}>{'No drawing submitted.'}</Text>
+      </View>
+    );
+  }
+
+  if (Platform.OS !== 'web') {
+    return (
+      <View style={[styles.reflectionbox, { padding: 20 }]}>
+        <Text style={styles.reflectioncontent}>
+          {'Canvas preview is only available on the Web browser view.'}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.reflectionbox, { padding: 0, overflow: 'hidden' }]}>
+      <canvas
+        ref={canvasRef as any}
+        width={WHITEBOARD_W}
+        height={WHITEBOARD_H}
+        style={{
+          width: '100%',
+          height: 'auto',
+          aspectRatio: WHITEBOARD_W / WHITEBOARD_H,
+          backgroundColor: '#FFFFFF',
+          display: 'block',
+        }}
+      />
+    </View>
+  );
+};
+
+export type StudentProfilePanelProps = {
+  student: any;
+  studentsData: any;
+};
+
+export function StudentProfilePanel({ student, studentsData }: StudentProfilePanelProps) {
+  const [openChatPersona, setOpenChatPersona] = useState<string | null>(null);
+
+  const students = studentsData ? Object.values(studentsData) : [];
+  const preferredGroupIds: string[] = student.preferredGroup || [];
+  const preferredNames = preferredGroupIds
+    .map((id) => {
+      const match: any = students.find((st: any) => st.id === id);
+      return match ? match.name : id;
+    })
+    .join(', ');
+
+  const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
+  const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
+
+  const getChatMessages = (pid: string): { role: string; content: string }[] => {
+    const raw = student.chats?.[pid];
+    if (!raw) return [];
+    const parts = raw.split('|||');
+    return parts.map((content: string, idx: number) => ({
+      role: idx % 2 === 0 ? 'assistant' : 'user',
+      content,
+    }));
+  };
+
+  return (
+    <>
+      <View style={styles.profileheadercard}>
+        <Text style={styles.profilename}>{student.name}</Text>
+        <View style={styles.metarow}>
+          <View
+            style={[
+              styles.statusbadge,
+              { backgroundColor: student.submitted ? c.green : c.grey },
+            ]}
+          >
+            <Text style={styles.statusbadgetext}>
+              {student.submitted ? 'Submitted' : 'In Progress'}
+            </Text>
+          </View>
+          {student.joinedAt && (
+            <Text style={styles.joinedtime}>
+              Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.sectioncard}>
+        <Text style={styles.sectiontitle}>Preferred Group Members</Text>
+        <Text style={styles.sectioncontent}>
+          {preferredNames || 'No preferences selected'}
+        </Text>
+      </View>
+
+      <View style={styles.shoppingsection}>
+        <View style={[styles.sectioncard, { flex: 1 }]}>
+          <View style={styles.sectiontitlerow}>
+            <PsIcon name="grocery" size={20} />
+            <Text style={styles.sectiontitlerowtext}>Items Bought</Text>
+          </View>
+          {boughtItems.length === 0 ? (
+            <Text style={styles.emptytext}>Nothing bought</Text>
+          ) : (
+            boughtItems.map((i) => (
+              <Text key={i.id} style={styles.itemrow}>
+                {i.name} x{student.bought[i.id]}
+              </Text>
+            ))
+          )}
+        </View>
+
+        <View style={[styles.sectioncard, { flex: 1 }]}>
+          <Text style={styles.sectiontitle}>Items Borrowed</Text>
+          {borrowedItems.length === 0 ? (
+            <Text style={styles.emptytext}>Nothing borrowed</Text>
+          ) : (
+            borrowedItems.map((i) => (
+              <Text key={i.id} style={styles.itemrow}>
+                {i.name} x{student.borrowed[i.id]}
+              </Text>
+            ))
+          )}
+        </View>
+      </View>
+
+      <View style={styles.sectioncard}>
+        <Text style={styles.sectiontitle}>Conversations with Seniors</Text>
+        <Text style={styles.chatsectiondesc}>Tapping on a senior below reveals their chat log.</Text>
+        {defpers.map((p) => {
+          const messages = getChatMessages(p.id);
+          const isOpen = openChatPersona === p.id;
+          const hasChat = messages.length > 0;
+
+          return (
+            <View key={p.id} style={styles.chatpersonarow}>
+              <Pressable
+                onPress={() => hasChat && setOpenChatPersona(isOpen ? null : p.id)}
+                style={styles.chatpersonaheader}
+                disabled={!hasChat}
+              >
+                <Text style={styles.chatpersonaname}>
+                  {p.name}
+                </Text>
+                {hasChat ? (
+                  <Text style={styles.chattoggleindicator}>
+                    {isOpen ? '▲ Hide Log' : '▼ View Log'} ({messages.length} msgs)
+                  </Text>
+                ) : (
+                  <Text style={styles.nochattext}>Not started</Text>
+                )}
+              </Pressable>
+
+              {isOpen && hasChat && (
+                <View style={styles.chatlogcontainer}>
+                  {messages.map((m, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.chatbubble,
+                        {
+                          alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                          backgroundColor: m.role === 'user' ? c.yellow : c.teal,
+                        },
+                      ]}
+                    >
+                      <Text style={styles.chatbubbletext}>{m.content}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.sectioncard}>
+        <Text style={styles.sectiontitle}>Reflections Summary</Text>
+        <View style={styles.reflectionbox}>
+          {student.reflections ? (
+            Object.entries(student.reflections).map(([idx, ans]: [string, any]) => (
+              <View key={idx} style={{ marginBottom: 8 }}>
+                <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 13, color: c.navy }}>Q{Number(idx) + 1}:</Text>
+                <Text style={styles.reflectioncontent}>{String(ans || '(No answer)')}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.reflectioncontent}>
+              {student.reflection || 'No reflection submitted yet'}
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {!!(student.whiteboardStrokes || student.whiteboardNotes) && (
+        <View style={styles.sectioncard}>
+          <Text style={styles.sectiontitle}>Whiteboard</Text>
+          <ReadOnlyWhiteboard rawStrokes={student.whiteboardStrokes} />
+          {!!student.whiteboardNotes && (
+            <View style={[styles.reflectionbox, { marginTop: 12 }]}>
+              <Text style={[styles.reflectionprompt, { marginBottom: 6 }]}>
+                Written notes:
+              </Text>
+              <Text style={styles.reflectioncontent}>{student.whiteboardNotes}</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      <View style={styles.sectioncard}>
+        <Text style={styles.sectiontitle}>Student Rating</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          {student.rating ? (
+            <>
+              {[1, 2, 3, 4, 5].map((val) => (
+                <Image
+                  key={val}
+                  source={require('../../assets/mascot.png')}
+                  style={{ width: 24, height: 24, opacity: val <= student.rating ? 1 : 0.25 }}
+                  resizeMode="contain"
+                />
+              ))}
+              <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 16, color: c.orange }}>
+                {student.rating} / 5 Loopies
+              </Text>
+            </>
+          ) : (
+            <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: c.grey }}>
+              No rating given yet
+            </Text>
+          )}
+        </View>
+      </View>
+    </>
+  );
+}
 
 export default function KeldaStudentDetailScreen() {
   const router = useRouter();
@@ -14,8 +282,6 @@ export default function KeldaStudentDetailScreen() {
     activeSession?.id && studentId ? `sessions/${activeSession.id}/students/${studentId}` : null
   );
   const studentsData = usefb(activeSession?.id ? `sessions/${activeSession.id}/students` : null);
-
-  const [openChatPersona, setOpenChatPersona] = useState<string | null>(null);
 
   if (activeSession === undefined || student === undefined || studentsData === undefined) {
     return (
@@ -41,29 +307,6 @@ export default function KeldaStudentDetailScreen() {
     );
   }
 
-  const students = studentsData ? Object.values(studentsData) : [];
-
-  const preferredGroupIds: string[] = student.preferredGroup || [];
-  const preferredNames = preferredGroupIds
-    .map((id) => {
-      const match: any = students.find((st: any) => st.id === id);
-      return match ? match.name : id;
-    })
-    .join(', ');
-
-  const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
-  const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
-
-  const getChatMessages = (pid: string): { role: string; content: string }[] => {
-    const raw = student.chats?.[pid];
-    if (!raw) return [];
-    const parts = raw.split('|||');
-    return parts.map((content: string, idx: number) => ({
-      role: idx % 2 === 0 ? 'assistant' : 'user',
-      content,
-    }));
-  };
-
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.navbar}>
@@ -75,166 +318,7 @@ export default function KeldaStudentDetailScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
         <Wide>
-          <View style={styles.profileheadercard}>
-            <Text style={styles.profilename}>{student.name}</Text>
-            <View style={styles.metarow}>
-              <View
-                style={[
-                  styles.statusbadge,
-                  { backgroundColor: student.submitted ? c.green : c.grey },
-                ]}
-              >
-                <Text style={styles.statusbadgetext}>
-                  {student.submitted ? 'Submitted' : 'In Progress'}
-                </Text>
-              </View>
-              {student.joinedAt && (
-                <Text style={styles.joinedtime}>
-                  Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>Preferred Group Members</Text>
-            <Text style={styles.sectioncontent}>
-              {preferredNames || 'No preferences selected'}
-            </Text>
-          </View>
-
-          <View style={styles.shoppingsection}>
-            <View style={[styles.sectioncard, { flex: 1 }]}>
-              <View style={styles.sectiontitlerow}>
-                <PsIcon name="grocery" size={20} />
-                <Text style={styles.sectiontitlerowtext}>Items Bought</Text>
-              </View>
-              {boughtItems.length === 0 ? (
-                <Text style={styles.emptytext}>Nothing bought</Text>
-              ) : (
-                boughtItems.map((i) => (
-                  <Text key={i.id} style={styles.itemrow}>
-                    {i.name} x{student.bought[i.id]}
-                  </Text>
-                ))
-              )}
-            </View>
-
-            <View style={[styles.sectioncard, { flex: 1 }]}>
-              <Text style={styles.sectiontitle}>Items Borrowed</Text>
-              {borrowedItems.length === 0 ? (
-                <Text style={styles.emptytext}>Nothing borrowed</Text>
-              ) : (
-                borrowedItems.map((i) => (
-                  <Text key={i.id} style={styles.itemrow}>
-                    {i.name} x{student.borrowed[i.id]}
-                  </Text>
-                ))
-              )}
-            </View>
-          </View>
-
-          <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>Conversations with Seniors</Text>
-            <Text style={styles.chatsectiondesc}>Tapping on a senior below reveals their chat log.</Text>
-            {defpers.map((p) => {
-              const messages = getChatMessages(p.id);
-              const isOpen = openChatPersona === p.id;
-              const hasChat = messages.length > 0;
-
-              return (
-                <View key={p.id} style={styles.chatpersonarow}>
-                  <Pressable
-                    onPress={() => hasChat && setOpenChatPersona(isOpen ? null : p.id)}
-                    style={styles.chatpersonaheader}
-                    disabled={!hasChat}
-                  >
-                    <Text style={styles.chatpersonaname}>
-                      {p.name}
-                    </Text>
-                    {hasChat ? (
-                      <Text style={styles.chattoggleindicator}>
-                        {isOpen ? '▲ Hide Log' : '▼ View Log'} ({messages.length} msgs)
-                      </Text>
-                    ) : (
-                      <Text style={styles.nochattext}>Not started</Text>
-                    )}
-                  </Pressable>
-
-                  {isOpen && hasChat && (
-                    <View style={styles.chatlogcontainer}>
-                      {messages.map((m, idx) => (
-                        <View
-                          key={idx}
-                          style={[
-                            styles.chatbubble,
-                            {
-                              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                              backgroundColor: m.role === 'user' ? c.yellow : c.teal,
-                            },
-                          ]}
-                        >
-                          <Text style={styles.chatbubbletext}>{m.content}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-
-          <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>Reflections Summary</Text>
-            <View style={styles.reflectionbox}>
-              {student.reflections ? (
-                Object.entries(student.reflections).map(([idx, ans]: [string, any]) => (
-                  <View key={idx} style={{ marginBottom: 8 }}>
-                    <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 13, color: c.navy }}>Q{Number(idx) + 1}:</Text>
-                    <Text style={styles.reflectioncontent}>{String(ans || '(No answer)')}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.reflectioncontent}>
-                  {student.reflection || 'No reflection submitted yet'}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {!!student.whiteboardNotes && (
-            <View style={styles.sectioncard}>
-              <Text style={styles.sectiontitle}>Whiteboard Notes</Text>
-              <View style={styles.reflectionbox}>
-                <Text style={styles.reflectioncontent}>{student.whiteboardNotes}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.sectioncard}>
-            <Text style={styles.sectiontitle}>Student Rating</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              {student.rating ? (
-                <>
-                  {[1, 2, 3, 4, 5].map((val) => (
-                    <Image
-                      key={val}
-                      source={val <= student.rating ? require('../../assets/mascot.png') : require('../../assets/icons for ps/complete.png')}
-                      style={{ width: 24, height: 24, opacity: val <= student.rating ? 1 : 0.3 }}
-                      resizeMode="contain"
-                    />
-                  ))}
-                  <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 16, color: c.orange }}>
-                    {student.rating} / 5 Loopies
-                  </Text>
-                </>
-              ) : (
-                <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: c.grey }}>
-                  No rating given yet
-                </Text>
-              )}
-            </View>
-          </View>
+          <StudentProfilePanel student={student} studentsData={studentsData} />
         </Wide>
       </ScrollView>
     </SafeAreaView>

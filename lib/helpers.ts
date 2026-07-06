@@ -131,6 +131,22 @@ export const getReflectionAnswers = (student: any, questions: string[]) =>
     answer: getReflectionAnswer(student, index).trim(),
   }));
 
+export type WhiteboardStroke = {
+  color: string;
+  points: { x: number; y: number }[];
+  erase?: boolean;
+};
+
+export const parseWhiteboardStrokes = (raw: any): WhiteboardStroke[] => {
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 export const formatReflectionSummary = (student: any, questions: string[]) =>
   getReflectionAnswers(student, questions)
     .map(({ question, answer }, index) =>

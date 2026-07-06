@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, SafeAreaView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, SafeAreaView, Share, Pressable, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, itemsbuy, itemsbor, defpers, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, Wide, Btn, PsIcon } from '../../components/parts';
+import { getUniquePressedQuestions, parseTranscript } from './interview';
 
 export default function StudentSummaryScreen() {
   const router = useRouter();
@@ -58,6 +59,95 @@ export default function StudentSummaryScreen() {
     }
   };
 
+  const handleDownloadSummary = async () => {
+    const lines: string[] = [];
+    lines.push('Loopie Town Session Summary');
+    lines.push('===========================');
+    lines.push(`Student: ${student.name}`);
+    lines.push(`Status: ${student.submitted ? 'Submitted' : 'In Progress'}`);
+    if (student.submittedAt) {
+      lines.push(`Submitted At: ${new Date(student.submittedAt).toLocaleString()}`);
+    }
+    lines.push('');
+
+    lines.push('ITEMS BOUGHT');
+    lines.push('------------');
+    if (boughtItems.length === 0) {
+      lines.push('  (none)');
+    } else {
+      boughtItems.forEach((i) => {
+        lines.push(`  - ${i.name} x${student.bought[i.id]}`);
+      });
+    }
+    lines.push('');
+
+    lines.push('ACTIVE AGING CENTRE (BORROWED)');
+    lines.push('------------------------------');
+    if (borrowedItems.length === 0) {
+      lines.push('  (none)');
+    } else {
+      borrowedItems.forEach((i) => {
+        lines.push(`  - ${i.name} x${student.borrowed[i.id]}`);
+      });
+    }
+    lines.push('');
+
+    lines.push('INTERVIEWS');
+    lines.push('----------');
+    interviewProgress.forEach(({ persona, pressedCount, required, completed }) => {
+      const mark = completed ? '[x]' : '[ ]';
+      lines.push(`  ${mark} ${persona.name}  (${pressedCount} / ${required} questions)`);
+    });
+    lines.push('');
+
+    lines.push('REFLECTIONS');
+    lines.push('-----------');
+    if (reflectionQA.length === 0) {
+      lines.push('  (no questions)');
+    } else {
+      reflectionQA.forEach(({ question, answer }, idx) => {
+        lines.push(`  Q${idx + 1}: ${question}`);
+        lines.push(`  A: ${answer || '(no answer yet)'}`);
+        lines.push('');
+      });
+    }
+
+    if (student.whiteboardNotes && student.whiteboardNotes.trim().length > 0) {
+      lines.push('WHITEBOARD NOTES');
+      lines.push('----------------');
+      lines.push(student.whiteboardNotes);
+      lines.push('');
+    }
+
+    lines.push('RATING');
+    lines.push('------');
+    lines.push(`  ${rating} / 5 Loopies`);
+
+    const text = lines.join('\n');
+
+    if (Platform.OS === 'web') {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const safe = (student.name || 'student').replace(/[^a-z0-9_]+/gi, '_');
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `loopietown-summary-${safe}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      try {
+        await Share.share({
+          message: text,
+          title: 'Loopie Town Summary',
+        });
+      } catch (e: any) {
+        Alert.alert('Summary', text);
+      }
+    }
+  };
+
   if (!student) {
     return (
       <View style={styles.loadingroot}>
@@ -68,7 +158,19 @@ export default function StudentSummaryScreen() {
 
   const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
   const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
-  const chatPersonas = defpers.filter((p) => (student.chats || {})[p.id]);
+  const interviewProgress = defpers.map((p) => {
+    const messages = parseTranscript(student.chats?.[p.id], p);
+    const pressed = getUniquePressedQuestions(messages, p);
+    const required = p.quickQuestions.length;
+    return {
+      persona: p,
+      pressedCount: pressed.length,
+      required,
+      completed: pressed.length >= required,
+    };
+  });
+  const chatPersonasComplete = interviewProgress.filter((entry) => entry.completed);
+  const chatPersonasPartial = interviewProgress.filter((entry) => !entry.completed);
   const reflectionQA = getReflectionAnswers(student, questions);
 
   return (
@@ -110,16 +212,31 @@ export default function StudentSummaryScreen() {
             <View style={[styles.summarycard, { flex: 1 }]}>
               <Text style={styles.cardheader}>Interviews Completed</Text>
               <View style={styles.itemsbox}>
-                {chatPersonas.length === 0 ? (
-                  <Text style={styles.emptytext}>No interviews completed</Text>
+                {chatPersonasComplete.length === 0 ? (
+                  <Text style={styles.emptytext}>No interviews completed yet</Text>
                 ) : (
-                  chatPersonas.map((p) => (
-                    <Text key={p.id} style={styles.itemrow}>
-                      {p.name}
+                  chatPersonasComplete.map(({ persona }) => (
+                    <Text key={persona.id} style={styles.itemrow}>
+                      {persona.name}
                     </Text>
                   ))
                 )}
               </View>
+
+              {chatPersonasPartial.length > 0 && (
+                <>
+                  <Text style={[styles.cardheader, { marginTop: 16 }]}>
+                    Interviews In Progress
+                  </Text>
+                  <View style={styles.itemsbox}>
+                    {chatPersonasPartial.map(({ persona, pressedCount, required }) => (
+                      <Text key={persona.id} style={styles.itemrow}>
+                        {persona.name}  {pressedCount} / {required} questions
+                      </Text>
+                    ))}
+                  </View>
+                </>
+              )}
 
               {!!student.whiteboardNotes && (
                 <>
@@ -160,8 +277,8 @@ export default function StudentSummaryScreen() {
                     ]}
                   >
                     <Image
-                      source={filled ? require('../../assets/mascot.png') : require('../../assets/icons for ps/complete.png')}
-                      style={[styles.loopieimage, { opacity: filled ? 1 : 0.3 }]}
+                      source={require('../../assets/mascot.png')}
+                      style={[styles.loopieimage, { opacity: filled ? 1 : 0.25 }]}
                       resizeMode="contain"
                     />
                   </Pressable>
@@ -187,6 +304,15 @@ export default function StudentSummaryScreen() {
               icon={student.submitted ? 'complete' : 'checklist'}
             />
           )}
+
+          <Btn
+            label="DOWNLOAD SUMMARY"
+            onPress={handleDownloadSummary}
+            color={c.purple}
+            textColor={c.white}
+            style={{ marginTop: 12 }}
+            icon="checklist"
+          />
 
           {student.submitted && (
             <View style={styles.submittedalert}>
