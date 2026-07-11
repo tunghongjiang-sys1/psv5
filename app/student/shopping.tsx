@@ -6,70 +6,7 @@ import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, itemsbuy, itemsbor, c } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, PsIcon, Wide, Btn } from '../../components/parts';
-
-const BUY_IMAGES: Record<string, ImageSourcePropType> = {
-  colored_markers: require('../../assets/one_icon_one_png_named/01_coloured_markers_dollar3_per_packet.png'),
-  painting_kit: require('../../assets/one_icon_one_png_named/02_painting_kit_dollar5_per_kit.png'),
-  origami_paper: require('../../assets/one_icon_one_png_named/03_origami_paper_dollar3_per_packet.png'),
-  terrarium_kit: require('../../assets/one_icon_one_png_named/04_terrarium_kit_dollar15_per_kit.png'),
-  bento_box: require('../../assets/one_icon_one_png_named/05_bento_box_dollar5_per_packet.png'),
-  gardening_kit: require('../../assets/one_icon_one_png_named/06_gardening_kit_dollar10_per_kit.png'),
-  baking_equipment: require('../../assets/one_icon_one_png_named/07_baking_equipment_dollar10_per_kit.png'),
-  traditional_games: require('../../assets/one_icon_one_png_named/08_traditional_games_set_dollar3_per_set.png'),
-  dry_clay: require('../../assets/one_icon_one_png_named/09_dry_clay_dollar5_per_packet.png'),
-  sugar: require('../../assets/one_icon_one_png_named/10_sugar_dollar2_per_packet.png'),
-  oil: require('../../assets/one_icon_one_png_named/11_oil_dollar8_per_bottle.png'),
-  packet_milk: require('../../assets/one_icon_one_png_named/12_packet_milk_dollar6_per_pack.png'),
-  biscuits: require('../../assets/one_icon_one_png_named/13_biscuits_dollar4_per_packet.png'),
-  single_packed_bread: require('../../assets/one_icon_one_png_named/14_single_packed_bread_dollar2_per_packet.png'),
-  instant_noodles: require('../../assets/one_icon_one_png_named/15_instant_noodles_dollar2_per_packet.png'),
-  tea: require('../../assets/one_icon_one_png_named/16_tea_dollar5_per_packet.png'),
-  coffee_3_in_1: require('../../assets/one_icon_one_png_named/17_3_in_1_coffee_dollar5_per_packet.png'),
-  canned_drinks: require('../../assets/one_icon_one_png_named/18_canned_drinks_dollar5_per_pack.png'),
-  paper_cups: require('../../assets/one_icon_one_png_named/19_paper_cups_dollar5_per_packet.png'),
-  bottled_soap: require('../../assets/one_icon_one_png_named/20_bottled_soap_dollar5_per_bottle.png'),
-  percussion_triangle_a: require('../../assets/one_icon_one_png_named/33_percussion_triangle_dollar12_per_set_A.png'),
-  sandals_a: require('../../assets/one_icon_one_png_named/34_sandals_dollar15_per_pair_A.png'),
-  percussion_triangle_b: require('../../assets/one_icon_one_png_named/35_percussion_triangle_dollar12_per_set_B.png'),
-  socks_a: require('../../assets/one_icon_one_png_named/36_socks_dollar2_per_pair_A.png'),
-  socks_b: require('../../assets/one_icon_one_png_named/37_socks_dollar2_per_pair_B.png'),
-  maracas_a: require('../../assets/one_icon_one_png_named/38_maracas_dollar3_per_set_A.png'),
-  tambourine_a: require('../../assets/one_icon_one_png_named/39_tambourine_dollar10_per_set_A.png'),
-  electric_fan_a: require('../../assets/one_icon_one_png_named/40_electric_fan_dollar38_per_piece_A.png'),
-  sandals_b: require('../../assets/one_icon_one_png_named/41_sandals_dollar15_per_pair_B.png'),
-  maracas_b: require('../../assets/one_icon_one_png_named/42_maracas_dollar3_per_set_B.png'),
-  tambourine_b: require('../../assets/one_icon_one_png_named/43_tambourine_dollar10_per_set_B.png'),
-  electric_fan_b: require('../../assets/one_icon_one_png_named/44_electric_fan_dollar38_per_piece_B.png'),
-  foldable_umbrella: require('../../assets/one_icon_one_png_named/45_foldable_umbrella_dollar8_per_piece.png'),
-  cereal: require('../../assets/one_icon_one_png_named/46_cereal_dollar4_per_box.png'),
-  attraction_ticket: require('../../assets/one_icon_one_png_named/47_attraction_ticket_dollar20_per_ticket.png'),
-  adult_diapers: require('../../assets/one_icon_one_png_named/48_adult_diapers_dollar10_per_packet.png'),
-  skipping_rope: require('../../assets/one_icon_one_png_named/49_skipping_rope_dollar2_per_set.png'),
-  frozen_vegetables: require('../../assets/one_icon_one_png_named/50_frozen_vegetables_dollar2_per_packet.png'),
-  bottled_water: require('../../assets/one_icon_one_png_named/51_bottled_water_dollar1_per_bottle.png'),
-  bus_transport_2_way: require('../../assets/one_icon_one_png_named/52_2_way_bus_transport_dollar130.png'),
-  dustpan_and_broom: require('../../assets/one_icon_one_png_named/53_dustpan_and_broom_dollar5_per_set.png'),
-  exercise_mat: require('../../assets/one_icon_one_png_named/54_exercise_mat_dollar10_per_piece.png'),
-  catered_meal: require('../../assets/one_icon_one_png_named/55_catered_meal_dollar8_per_pax.png'),
-  vouchers: require('../../assets/one_icon_one_png_named/56_vouchers_dollar10_per_piece.png'),
-  soap_bar: require('../../assets/one_icon_one_png_named/57_soap_bar_dollar2_per_piece.png'),
-  facial_cleanser: require('../../assets/one_icon_one_png_named/58_facial_cleanser_dollar6_per_bottle.png'),
-};
-
-const BORROW_IMAGES: Record<string, ImageSourcePropType> = {
-  color_pencils: require('../../assets/one_icon_one_png_named/21_colour_pencils_available_10_packs.png'),
-  crayons: require('../../assets/one_icon_one_png_named/22_crayons_available_10_packs.png'),
-  av_system: require('../../assets/one_icon_one_png_named/23_av_system_available_1.png'),
-  drawing_paper: require('../../assets/one_icon_one_png_named/24_drawing_paper_available_plenty.png'),
-  foldable_table: require('../../assets/one_icon_one_png_named/25_foldable_table_available_20.png'),
-  projector: require('../../assets/one_icon_one_png_named/26_projector_available_1.png'),
-  construction_paper: require('../../assets/one_icon_one_png_named/27_construction_paper_available_plenty.png'),
-  chairs: require('../../assets/one_icon_one_png_named/28_chairs_available_60.png'),
-  mahjong_table: require('../../assets/one_icon_one_png_named/29_mahjong_table_available_2.png'),
-  microphone: require('../../assets/one_icon_one_png_named/30_microphone_available_3.png'),
-  scissors: require('../../assets/one_icon_one_png_named/31_scissors_available_20.png'),
-  glue_stick: require('../../assets/one_icon_one_png_named/32_glue_stick_available_20.png'),
-};
+import { BUY_IMAGES, BORROW_IMAGES } from '../../lib/shoppingitems';
 
 export default function StudentShoppingScreen() {
   const router = useRouter();
