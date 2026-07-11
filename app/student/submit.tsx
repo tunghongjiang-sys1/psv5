@@ -100,6 +100,25 @@ export default function StudentSummaryScreen() {
     });
     lines.push('');
 
+    lines.push('INTERVIEW CONVERSATIONS');
+    lines.push('-----------------------');
+    if (chattedPersonas.length === 0) {
+      lines.push('  (no interview questions answered)');
+    } else {
+      const flattenForTxt = (value: string) =>
+        String(value ?? '').replace(/[\r\n]+/g, ' ').trim();
+      chattedPersonas.forEach(({ persona, messages, pressedCount, required }) => {
+        lines.push(
+          `  ${persona.name} (Age ${persona.age}) — ${pressedCount} / ${required} questions answered`
+        );
+        messages.forEach((m) => {
+          const speaker = m.role === 'user' ? 'You' : persona.name;
+          lines.push(`    [${speaker}] ${flattenForTxt(m.content)}`);
+        });
+        lines.push('');
+      });
+    }
+
     lines.push('REFLECTIONS');
     lines.push('-----------');
     if (reflectionQA.length === 0) {
@@ -164,6 +183,7 @@ export default function StudentSummaryScreen() {
     const required = p.quickQuestions.length;
     return {
       persona: p,
+      messages,
       pressedCount: pressed.length,
       required,
       completed: pressed.length >= required,
@@ -171,6 +191,9 @@ export default function StudentSummaryScreen() {
   });
   const chatPersonasComplete = interviewProgress.filter((entry) => entry.completed);
   const chatPersonasPartial = interviewProgress.filter((entry) => !entry.completed);
+  const chattedPersonas = interviewProgress.filter((entry) =>
+    entry.messages.some((m) => m.role === 'user')
+  );
   const reflectionQA = getReflectionAnswers(student, questions);
 
   return (
@@ -260,6 +283,58 @@ export default function StudentSummaryScreen() {
               </View>
             </View>
           </View>
+
+
+          {chattedPersonas.length > 0 && (
+            <View style={styles.transcriptsection}>
+              <Text style={styles.transcriptheader}>Interview Conversations</Text>
+              <Text style={styles.transcriptsubheader}>
+                Your saved questions and each senior's replies from the interview phase.
+              </Text>
+              {chattedPersonas.map(({ persona, messages, pressedCount, required }) => (
+                <View key={persona.id} style={styles.transcriptcard}>
+                  <View style={styles.transcriptpersonarow}>
+                    <Image
+                      source={persona.photo}
+                      style={styles.transcriptavatar}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.transcriptpersonatext}>
+                      <Text style={styles.transcriptpersonaname}>{persona.name}</Text>
+                      <Text style={styles.transcriptpersonameta}>
+                        Age {persona.age} · {pressedCount} / {required} questions answered
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.transcriptbubbles}>
+                    {messages.map((message, idx) => {
+                      const isUser = message.role === 'user';
+                      return (
+                        <View
+                          key={`${persona.id}-${message.role}-${idx}`}
+                          style={[
+                            styles.transcriptbubble,
+                            isUser
+                              ? styles.transcriptuserbubble
+                              : styles.transcriptassistantbubble,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.transcriptbubbletext,
+                              isUser && styles.transcriptuserbubbletext,
+                            ]}
+                          >
+                            {message.content}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
 
 
           <View style={styles.ratingbox}>
@@ -443,5 +518,91 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans_700Bold',
     color: c.green,
     fontSize: 15,
+  },
+  transcriptsection: {
+    marginTop: 4,
+    marginBottom: 16,
+    gap: 12,
+  },
+  transcriptheader: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 20,
+    color: c.navy,
+    marginBottom: 4,
+  },
+  transcriptsubheader: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 13,
+    color: c.grey,
+    marginBottom: 6,
+  },
+  transcriptcard: {
+    backgroundColor: c.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  transcriptpersonarow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+  },
+  transcriptavatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: c.greyLight,
+  },
+  transcriptpersonatext: {
+    flex: 1,
+    minWidth: 0,
+  },
+  transcriptpersonaname: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 15,
+    color: c.navy,
+  },
+  transcriptpersonameta: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 12,
+    color: c.grey,
+    marginTop: 2,
+  },
+  transcriptbubbles: {
+    gap: 8,
+  },
+  transcriptbubble: {
+    maxWidth: '92%',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  transcriptuserbubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: c.teal,
+  },
+  transcriptassistantbubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EEF1F8',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  transcriptbubbletext: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 13,
+    lineHeight: 18,
+    color: c.navy,
+  },
+  transcriptuserbubbletext: {
+    color: c.navy,
   },
 });
