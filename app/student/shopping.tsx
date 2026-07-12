@@ -171,7 +171,6 @@ export default function StudentShoppingScreen() {
             })}
           </View>
 
-
           <View style={[styles.sectionheadercontainer, { marginTop: 24 }]}>
             <View style={styles.sectiontitlewithicon}>
               <PsIcon name="grocery" size={22} />

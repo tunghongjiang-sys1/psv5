@@ -106,7 +106,6 @@ export default function StudentReflectionsScreen() {
             )}
           </View>
 
-
           {showForm && (
             <View style={styles.formcontainer}>
               <View style={styles.slideheader}>
@@ -171,7 +170,6 @@ export default function StudentReflectionsScreen() {
               </Pressable>
             </View>
           )}
-
 
           {reflections.map((r: any) => {
             const isSelf = r.id === studentId;

@@ -12,7 +12,7 @@ export function useAnonymousAuth() {
         setUser(firebaseUser);
         setLoading(false);
       } else {
-        
+
         signInAnonymously(auth)
           .then((cred) => {
             setUser(cred.user);

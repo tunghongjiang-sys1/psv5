@@ -33,6 +33,8 @@ type ChatMessage = {
   content: string;
 };
 
+export type InterviewStatus = 'not_started' | 'in_progress' | 'completed';
+
 const cleanForTranscript = (value: string) => value.replace(/\|\|\|/g, ' ').trim();
 
 const getStarter = (persona: Persona): ChatMessage[] => [
@@ -72,17 +74,36 @@ const getUniquePressedQuestions = (
   return out;
 };
 
-export { parseTranscript, getUniquePressedQuestions };
+const computePersonaStatus = (
+  messages: ChatMessage[],
+  persona: Persona
+): InterviewStatus => {
+  const pressed = getUniquePressedQuestions(messages, persona);
+  if (pressed.length >= persona.quickQuestions.length) return 'completed';
+  if (pressed.length > 0) return 'in_progress';
+  return 'not_started';
+};
+
+export { parseTranscript, getUniquePressedQuestions, computePersonaStatus };
 
 const serializeTranscript = (messages: ChatMessage[]) =>
   messages.map((m) => cleanForTranscript(m.content)).join('|||');
+
+const formatSavedClock = (timestamp: number) => {
+  const d = new Date(timestamp);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+};
 
 export default function StudentInterviewScreen() {
   const router = useRouter();
   const { studentId, sessionId } = useStudentState();
   const { width } = useWindowDimensions();
   const chatScrollRef = useRef<ScrollView | null>(null);
-  const loadedRef = useRef(false);
+  const lastLoadedChatsJsonRef = useRef<string | null>(null);
+  const inFlightRef = useRef<boolean>(false);
 
   const [activePersonaId, setActivePersonaId] = useState(interviewPersonas[0].id);
   const [messagesByPersona, setMessagesByPersona] = useState<Record<string, ChatMessage[]>>(
@@ -96,6 +117,8 @@ export default function StudentInterviewScreen() {
       )
   );
   const [savingPersonaId, setSavingPersonaId] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!studentId || !sessionId) {
@@ -107,8 +130,10 @@ export default function StudentInterviewScreen() {
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
 
   useEffect(() => {
-    if (!student || loadedRef.current) return;
-    loadedRef.current = true;
+    if (!student) return;
+    const chatsJson = JSON.stringify(student.chats ?? {});
+    if (lastLoadedChatsJsonRef.current === chatsJson) return;
+    lastLoadedChatsJsonRef.current = chatsJson;
     setMessagesByPersona(
       interviewPersonas.reduce(
         (acc, persona) => ({
@@ -137,7 +162,10 @@ export default function StudentInterviewScreen() {
 
   const handleSend = async (question: string) => {
     const text = cleanForTranscript(question);
-    if (!text || savingPersonaId) return;
+    if (!text) return;
+
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
 
     const persona = activePersona;
     const current = messagesByPersona[persona.id] ?? getStarter(persona);
@@ -147,23 +175,51 @@ export default function StudentInterviewScreen() {
       { role: 'assistant', content: makeInterviewReply(persona, text, current.length) },
     ];
 
-    setMessagesByPersona((prev) => ({
-      ...prev,
+    const nextAll: Record<string, ChatMessage[]> = {
+      ...messagesByPersona,
       [persona.id]: nextMessages,
-    }));
+    };
+    setMessagesByPersona(nextAll);
     setSavingPersonaId(persona.id);
+    setSaveError(null);
+
+    const now = Date.now();
+
+    const personaStatus = computePersonaStatus(nextMessages, persona);
+    const updatedStatuses: Record<string, InterviewStatus> = {
+      ...(student?.interviewStatuses || {}),
+      [persona.id]: personaStatus,
+    };
+
+    if (!student) {
+      for (const p of interviewPersonas) {
+        if (p.id === persona.id) continue;
+        const msgs = messagesByPersona[p.id] ?? getStarter(p);
+        updatedStatuses[p.id] = computePersonaStatus(msgs, p);
+      }
+    }
+    const allDone = interviewPersonas.every(
+      (p) => (updatedStatuses[p.id] ?? 'not_started') === 'completed'
+    );
 
     try {
       await fw(
         update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
           [`chats/${persona.id}`]: serializeTranscript(nextMessages),
-          interviewUpdatedAt: Date.now(),
+          [`interviewStatuses/${persona.id}`]: personaStatus,
+          allInterviewsCompleted: allDone,
+          interviewUpdatedAt: now,
         })
       );
+      setLastSavedAt(now);
+      setSaveError(null);
     } catch (e: any) {
-      Alert.alert('Error saving chat', e.message);
+
+      setMessagesByPersona((prev) => ({ ...prev, [persona.id]: current }));
+      setSaveError(e?.message || 'Could not save chat.');
     } finally {
       setSavingPersonaId(null);
+      inFlightRef.current = false;
     }
   };
 
@@ -251,6 +307,24 @@ export default function StudentInterviewScreen() {
                 </View>
                 {savingPersonaId === activePersona.id && (
                   <ActivityIndicator color={c.teal} />
+                )}
+              </View>
+
+              <View style={styles.savestatusbar}>
+                {savingPersonaId === activePersona.id ? (
+                  <Text style={styles.savestatuspending}>Saving…</Text>
+                ) : saveError ? (
+                  <Text style={styles.savestatuserror}>
+                    ⚠ Not saved: {saveError}
+                  </Text>
+                ) : lastSavedAt ? (
+                  <Text style={styles.savestatusok}>
+                    ✓ Auto-saved at {formatSavedClock(lastSavedAt)}
+                  </Text>
+                ) : (
+                  <Text style={styles.savestatusidle}>
+                    Auto-saves every time you ask a question
+                  </Text>
                 )}
               </View>
 
@@ -439,6 +513,33 @@ const styles = StyleSheet.create({
     color: c.tealLight,
     fontSize: 13,
     marginTop: 2,
+  },
+  savestatusbar: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#F4F8FB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  savestatuspending: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 12,
+    color: c.purple,
+  },
+  savestatusok: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 12,
+    color: c.green,
+  },
+  savestatuserror: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 12,
+    color: c.red,
+  },
+  savestatusidle: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 12,
+    color: c.grey,
   },
   messagescroll: {
     flex: 1,

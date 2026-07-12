@@ -6,7 +6,11 @@ import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, itemsbuy, itemsbor, defpers, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
 import { ProgressBar, Wide, Btn, PsIcon } from '../../components/parts';
-import { getUniquePressedQuestions, parseTranscript } from './interview';
+import {
+  computePersonaStatus,
+  getUniquePressedQuestions,
+  parseTranscript,
+} from './interview';
 
 export default function StudentSummaryScreen() {
   const router = useRouter();
@@ -181,19 +185,23 @@ export default function StudentSummaryScreen() {
     const messages = parseTranscript(student.chats?.[p.id], p);
     const pressed = getUniquePressedQuestions(messages, p);
     const required = p.quickQuestions.length;
+
+    const status =
+      student?.interviewStatuses?.[p.id] ?? computePersonaStatus(messages, p);
     return {
       persona: p,
       messages,
       pressedCount: pressed.length,
       required,
-      completed: pressed.length >= required,
+      status,
+      completed: status === 'completed' || pressed.length >= required,
     };
   });
-  const chatPersonasComplete = interviewProgress.filter((entry) => entry.completed);
-  const chatPersonasPartial = interviewProgress.filter((entry) => !entry.completed);
   const chattedPersonas = interviewProgress.filter((entry) =>
     entry.messages.some((m) => m.role === 'user')
   );
+  const chatPersonasComplete = interviewProgress.filter((entry) => entry.completed);
+  const chatPersonasPartial = interviewProgress.filter((entry) => !entry.completed);
   const reflectionQA = getReflectionAnswers(student, questions);
 
   return (
@@ -246,17 +254,19 @@ export default function StudentSummaryScreen() {
                 )}
               </View>
 
-              {chatPersonasPartial.length > 0 && (
+              {chatPersonasPartial.some((entry) => entry.pressedCount > 0) && (
                 <>
                   <Text style={[styles.cardheader, { marginTop: 16 }]}>
                     Interviews In Progress
                   </Text>
                   <View style={styles.itemsbox}>
-                    {chatPersonasPartial.map(({ persona, pressedCount, required }) => (
-                      <Text key={persona.id} style={styles.itemrow}>
-                        {persona.name}  {pressedCount} / {required} questions
-                      </Text>
-                    ))}
+                    {chatPersonasPartial
+                      .filter((entry) => entry.pressedCount > 0)
+                      .map(({ persona, pressedCount, required }) => (
+                        <Text key={persona.id} style={styles.itemrow}>
+                          {persona.name}  {pressedCount} / {required} questions
+                        </Text>
+                      ))}
                   </View>
                 </>
               )}
@@ -283,59 +293,6 @@ export default function StudentSummaryScreen() {
               </View>
             </View>
           </View>
-
-
-          {chattedPersonas.length > 0 && (
-            <View style={styles.transcriptsection}>
-              <Text style={styles.transcriptheader}>Interview Conversations</Text>
-              <Text style={styles.transcriptsubheader}>
-                Your saved questions and each senior's replies from the interview phase.
-              </Text>
-              {chattedPersonas.map(({ persona, messages, pressedCount, required }) => (
-                <View key={persona.id} style={styles.transcriptcard}>
-                  <View style={styles.transcriptpersonarow}>
-                    <Image
-                      source={persona.photo}
-                      style={styles.transcriptavatar}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.transcriptpersonatext}>
-                      <Text style={styles.transcriptpersonaname}>{persona.name}</Text>
-                      <Text style={styles.transcriptpersonameta}>
-                        Age {persona.age} · {pressedCount} / {required} questions answered
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.transcriptbubbles}>
-                    {messages.map((message, idx) => {
-                      const isUser = message.role === 'user';
-                      return (
-                        <View
-                          key={`${persona.id}-${message.role}-${idx}`}
-                          style={[
-                            styles.transcriptbubble,
-                            isUser
-                              ? styles.transcriptuserbubble
-                              : styles.transcriptassistantbubble,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.transcriptbubbletext,
-                              isUser && styles.transcriptuserbubbletext,
-                            ]}
-                          >
-                            {message.content}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-
 
           <View style={styles.ratingbox}>
             <Text style={styles.ratingtitle}>Rate your learning experience today:</Text>
@@ -364,7 +321,6 @@ export default function StudentSummaryScreen() {
               {rating > 0 ? `Selected: ${rating} / 5 Loopies` : 'Tap a loopie to rate'}
             </Text>
           </View>
-
 
           {submitting ? (
             <ActivityIndicator color={c.navy} size="large" style={{ marginTop: 16 }} />
@@ -462,6 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: c.navy,
   },
+
   ratingbox: {
     backgroundColor: '#FFF8EB',
     borderRadius: 16,
@@ -513,96 +470,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F8F5',
     padding: 14,
     borderRadius: 12,
-  },
-  submittedalerttext: {
+  },  submittedalerttext: {
     fontFamily: 'DMSans_700Bold',
     color: c.green,
     fontSize: 15,
-  },
-  transcriptsection: {
-    marginTop: 4,
-    marginBottom: 16,
-    gap: 12,
-  },
-  transcriptheader: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 20,
-    color: c.navy,
-    marginBottom: 4,
-  },
-  transcriptsubheader: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 13,
-    color: c.grey,
-    marginBottom: 6,
-  },
-  transcriptcard: {
-    backgroundColor: c.white,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  transcriptpersonarow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEF2F7',
-  },
-  transcriptavatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: c.greyLight,
-  },
-  transcriptpersonatext: {
-    flex: 1,
-    minWidth: 0,
-  },
-  transcriptpersonaname: {
-    fontFamily: 'DMSans_700Bold',
-    fontSize: 15,
-    color: c.navy,
-  },
-  transcriptpersonameta: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 12,
-    color: c.grey,
-    marginTop: 2,
-  },
-  transcriptbubbles: {
-    gap: 8,
-  },
-  transcriptbubble: {
-    maxWidth: '92%',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 14,
-  },
-  transcriptuserbubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: c.teal,
-  },
-  transcriptassistantbubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EEF1F8',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  transcriptbubbletext: {
-    fontFamily: 'DMSans_500Medium',
-    fontSize: 13,
-    lineHeight: 18,
-    color: c.navy,
-  },
-  transcriptuserbubbletext: {
-    color: c.navy,
   },
 });

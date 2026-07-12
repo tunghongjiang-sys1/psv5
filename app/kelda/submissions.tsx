@@ -11,11 +11,67 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { usefb, c } from '../../lib/helpers';
+import { usefb, c, defpers } from '../../lib/helpers';
 import { PsIcon } from '../../components/parts';
 import { StudentProfilePanel } from './student-detail';
+import {
+  computePersonaStatus,
+  parseTranscript,
+} from '../student/interview';
 
 const SIDEBAR_WIDTH = 320;
+
+type InterviewStatus = 'not_started' | 'in_progress' | 'completed';
+
+const summariseInterviewProgress = (s: any) => {
+
+  if (s?.interviewStatuses && typeof s.interviewStatuses === 'object') {
+    let completedCount = 0;
+    let inProgressCount = 0;
+    let notStartedCount = 0;
+    for (const p of defpers) {
+      const status = s.interviewStatuses[p.id] as InterviewStatus | undefined;
+      if (status === 'completed') completedCount++;
+      else if (status === 'in_progress') inProgressCount++;
+      else notStartedCount++;
+    }
+    const total = defpers.length;
+    return {
+      completedCount,
+      inProgressCount,
+      notStartedCount,
+      total,
+      status:
+        completedCount === total && total > 0
+          ? 'completed'
+          : completedCount > 0 || inProgressCount > 0
+            ? 'in_progress'
+            : 'not_started',
+    };
+  }
+
+  let completedCount = 0;
+  let inProgressCount = 0;
+  for (const p of defpers) {
+    const messages = parseTranscript(s?.chats?.[p.id], p);
+    const status = computePersonaStatus(messages, p);
+    if (status === 'completed') completedCount++;
+    else if (status === 'in_progress') inProgressCount++;
+  }
+  const total = defpers.length;
+  return {
+    completedCount,
+    inProgressCount,
+    notStartedCount: total - completedCount - inProgressCount,
+    total,
+    status:
+      completedCount === total && total > 0
+        ? 'completed'
+        : completedCount > 0 || inProgressCount > 0
+          ? 'in_progress'
+          : 'not_started',
+  };
+};
 
 export default function KeldaSubmissionsScreen() {
   const router = useRouter();
@@ -155,6 +211,13 @@ export default function KeldaSubmissionsScreen() {
     const chatCount = s.chats ? Object.keys(s.chats).length : 0;
     const hasReflection = !!s.reflection;
     const isSelected = selectedId === s.id;
+    const interview = summariseInterviewProgress(s);
+    const interviewLabel =
+      interview.status === 'completed'
+        ? `Interviews ✓ ${interview.completedCount}/${interview.total}`
+        : interview.status === 'in_progress'
+          ? `Interviews · ${interview.completedCount}/${interview.total} done`
+          : `Interviews not started`;
 
     return (
       <Pressable
@@ -226,6 +289,30 @@ export default function KeldaSubmissionsScreen() {
             </View>
           </View>
         )}
+
+        <View style={styles.interviewstatusrow}>
+          <View
+            style={[
+              styles.interviewdot,
+              {
+                backgroundColor:
+                  interview.status === 'completed'
+                    ? c.green
+                    : interview.status === 'in_progress'
+                      ? c.yellow
+                      : c.greyLight,
+              },
+            ]}
+          />
+          <Text
+            style={[
+              styles.interviewstatustext,
+              isSelected && { color: c.white },
+            ]}
+          >
+            {interviewLabel}
+          </Text>
+        </View>
       </Pressable>
     );
   };
@@ -649,5 +736,21 @@ const styles = StyleSheet.create({
     color: c.grey,
     textAlign: 'center',
     maxWidth: 360,
+  },
+  interviewstatusrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  interviewdot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  interviewstatustext: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 12,
+    color: c.greyDark,
   },
 });

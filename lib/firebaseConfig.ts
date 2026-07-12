@@ -23,7 +23,7 @@ const authListeners = new Set<(user: User | null) => void>();
 
 export function onAuthStateChanged(authInstance: any, callback: (user: User | null) => void) {
   authListeners.add(callback);
-  
+
   let user: User | null = null;
   if (typeof window !== 'undefined') {
     try {
@@ -35,7 +35,7 @@ export function onAuthStateChanged(authInstance: any, callback: (user: User | nu
   }
   auth.currentUser = user;
   callback(user);
-  
+
   return () => {
     authListeners.delete(callback);
   };
@@ -86,27 +86,6 @@ function setPathValue(tree: any, path: string, value: any) {
   return tree;
 }
 
-function updatePathValue(tree: any, path: string, values: any) {
-  const parts = path.split('/').filter(Boolean);
-  if (parts.length === 0) {
-    return { ...tree, ...values };
-  }
-  let current = tree;
-  for (let i = 0; i < parts.length - 1; i++) {
-    const part = parts[i];
-    if (!(part in current) || current[part] === null || typeof current[part] !== 'object') {
-      current[part] = {};
-    }
-    current = current[part];
-  }
-  const lastKey = parts[parts.length - 1];
-  if (!(lastKey in current) || current[lastKey] === null || typeof current[lastKey] !== 'object') {
-    current[lastKey] = {};
-  }
-  current[lastKey] = { ...current[lastKey], ...values };
-  return tree;
-}
-
 const listeners = new Set<{ path: string; callback: (snap: any) => void }>();
 
 function loadDB() {
@@ -147,7 +126,7 @@ export function ref(dbInstance: any, path: string) {
   if (!dbInstance) {
     dbInstance = db;
   }
-  return { 
+  return {
     path,
     _path: {
       pieces: path.split('/').filter(Boolean),
@@ -165,7 +144,11 @@ export async function set(refObj: { path: string }, value: any) {
 
 export async function update(refObj: { path: string }, values: any) {
   const tree = loadDB();
-  const newTree = updatePathValue(tree, refObj.path, values);
+  let newTree = tree;
+  for (const [key, value] of Object.entries(values || {})) {
+    const fullPath = refObj.path ? `${refObj.path}/${key}` : key;
+    newTree = setPathValue(newTree, fullPath, value);
+  }
   saveDB(newTree);
 }
 
@@ -182,7 +165,7 @@ export function onValue(
 ) {
   const listener = { path: refObj.path, callback };
   listeners.add(listener);
-  
+
   const tree = loadDB();
   const val = getPathValue(tree, refObj.path);
   callback({

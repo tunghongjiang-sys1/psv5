@@ -8,7 +8,7 @@ import { Mascot, PsIcon, Wide, Btn } from '../../components/parts';
 export default function TeacherHomeScreen() {
   const router = useRouter();
   const session = usefb('activeSession');
-  
+
   const studdata = usefb(session?.id ? `sessions/${session.id}/students` : null);
   const stud = studdata ? Object.values(studdata) : [];
   const totalstud = stud.length;
