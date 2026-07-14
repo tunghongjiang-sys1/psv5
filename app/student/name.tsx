@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, useWindowDimensions, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { db, ref, set } from '../../lib/firebaseConfig';
+import { db, ref, set, auth } from '../../lib/firebaseConfig';
 import { usefb, fw, c } from '../../lib/helpers';
 import { studentState } from '../../lib/students';
 
@@ -71,6 +71,7 @@ export default function StudentEntryScreen() {
         set(ref(db, `sessions/${activeSession.id}/students/${sid}`), {
           name: trimmed,
           id: sid,
+          authUid: (auth as any)?.currentUser?.uid ?? null,
           joinedAt: Date.now(),
           preferredGroup: [],
           bought: {},
