@@ -8,8 +8,8 @@ import { PsIcon } from '../../components/parts';
 const tabs = [
   { key: 'interview', label: 'Interview', href: '/student/interview' },
   { key: 'shopping', label: 'Plan Logistics', href: '/student/shopping' },
-  { key: 'reflections', label: 'Reflections', href: '/student/reflections' },
   { key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard' },
+  { key: 'reflections', label: 'Reflections', href: '/student/reflections' },
   { key: 'summary', label: 'Summary', href: '/student/submit' },
 ];
 
