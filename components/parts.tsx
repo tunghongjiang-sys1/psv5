@@ -56,23 +56,59 @@ export const Wide = ({ children, style }: { children?: React.ReactNode; style?: 
   );
 };
 
-export const ProgressBar = memo(({ step }: { step: string }) => {
-  const steps = ['Groupings', 'Interview', 'Logistics', 'Reflections', 'Whiteboard', 'Summary'];
-  const idx = steps.indexOf(step);
+export const PROGRESS_STEPS = [
+  'Groupings',
+  'Interview',
+  'Plan Logistics',
+  'Reflections',
+  'Whiteboard',
+  'Summary',
+] as const;
+
+export type ProgressBarProps = {
+  
+  step?: string;
+  
+  activeIndex?: number;
+  
+  unlocked?: boolean[];
+  
+  completed?: boolean[];
+};
+
+export const ProgressBar = memo((props: ProgressBarProps) => {
+  const activeIndex =
+    typeof props.activeIndex === 'number'
+      ? props.activeIndex
+      : PROGRESS_STEPS.indexOf((props.step || 'Groupings') as any);
+  const totalSteps = PROGRESS_STEPS.length;
+  const unlocked =
+    props.unlocked && props.unlocked.length === totalSteps
+      ? props.unlocked
+      : new Array(totalSteps).fill(false);
+  const completed =
+    props.completed && props.completed.length === totalSteps
+      ? props.completed
+      : new Array(totalSteps).fill(false);
+
+  const lineColor = (leftIdx: number) =>
+    completed[leftIdx] || unlocked[leftIdx + 1]
+      ? c.teal
+      : leftIdx + 1 <= activeIndex
+        ? c.navy
+        : c.greyLight;
+
   return (
     <View style={styles.progBarRoot}>
-      {steps.map((s, i) => (
+      {PROGRESS_STEPS.map((s, i) => (
         <React.Fragment key={s}>
           {i > 0 && (
             <View
-              style={[
-                styles.progLine,
-                { backgroundColor: i <= idx ? c.navy : c.greyLight },
-              ]}
+              style={[styles.progLine, { backgroundColor: lineColor(i - 1) }]}
             />
           )}
           <View style={{ alignItems: 'center' }}>
-            {i === idx ? (
+            {i === activeIndex ? (
               <View style={{ alignItems: 'center' }}>
                 <View style={styles.progActiveBadge}>
                   <Text style={styles.progActiveText}>{s}</Text>
@@ -83,7 +119,16 @@ export const ProgressBar = memo(({ step }: { step: string }) => {
               <View
                 style={[
                   styles.progDot,
-                  { backgroundColor: i < idx ? c.orange : c.greyLight },
+                  {
+                    backgroundColor: completed[i]
+                      ? c.teal
+                      : unlocked[i]
+                        ? c.orange
+                        : i < activeIndex
+                          ? c.greyLight
+                          : c.greyLight,
+                    opacity: completed[i] || unlocked[i] ? 1 : 0.55,
+                  },
                 ]}
               />
             )}

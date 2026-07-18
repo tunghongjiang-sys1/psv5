@@ -1,29 +1,12 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { c, fw, usefb } from '../../lib/helpers';
-import {
-  getInterviewQuickQuestions,
-  getInterviewStarterMessage,
-  interviewPersonas,
-  makeInterviewReply,
-  type InterviewPersona,
-} from '../../components/interviewChatConfig';
+import { getInterviewQuickQuestions, getInterviewStarterMessage, interviewPersonas, makeInterviewReply, type InterviewPersona } from '../../components/interviewChatConfig';
 import { useStudentState } from '../../lib/students';
-import { Btn, ProgressBar, Wide } from '../../components/parts';
+import { Btn, Wide } from '../../components/parts';
 
 type Persona = InterviewPersona;
 type MessageRole = 'assistant' | 'user';
@@ -225,7 +208,6 @@ export default function StudentInterviewScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Interview" />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
         <Wide>
           <View style={[styles.layout, isWide && styles.layoutwide]}>

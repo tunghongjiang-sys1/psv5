@@ -1,12 +1,26 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usefb, c } from '../../lib/helpers';
 import { Mascot, PsIcon, Wide, Btn } from '../../components/parts';
+import { useKeldaState, keldaState } from '../../lib/keldaState';
 
 export default function TeacherHomeScreen() {
   const router = useRouter();
+  const { isUnlocked } = useKeldaState();
+
+  useEffect(() => {
+    if (!isUnlocked) {
+      router.replace('/kelda/login');
+    }
+  }, [isUnlocked, router]);
+
+  const handleLogout = () => {
+    keldaState.clear();
+    router.replace('/');
+  };
+
   const session = usefb('activeSession');
 
   const studdata = usefb(session?.id ? `sessions/${session.id}/students` : null);
@@ -29,7 +43,7 @@ export default function TeacherHomeScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.navbar}>
-        <Pressable onPress={() => router.replace('/')} style={styles.backbutton}>
+        <Pressable onPress={handleLogout} style={styles.backbutton}>
           <Text style={styles.backtext}>← Logout</Text>
         </Pressable>
         <Mascot size={48} />

@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, c } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
-import { ProgressBar, Wide, Btn } from '../../components/parts';
+import { Wide, Btn } from '../../components/parts';
 
 type Stroke = {
   color: string;
@@ -173,7 +173,6 @@ export default function StudentWhiteboardScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Whiteboard" />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
         <Wide>
           <View style={styles.header}>

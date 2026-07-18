@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pr
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usefb, itemsbuy, itemsbor, defpers, c, parseWhiteboardStrokes } from '../../lib/helpers';
 import { Wide, PsIcon } from '../../components/parts';
+import { useKeldaState } from '../../lib/keldaState';
 
 type ReadOnlyWhiteboardProps = {
   rawStrokes: any;
@@ -275,7 +276,15 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
 
 export default function KeldaStudentDetailScreen() {
   const router = useRouter();
+  const { isUnlocked } = useKeldaState();
   const { studentId } = useLocalSearchParams<{ studentId: string }>();
+
+  useEffect(() => {
+    if (!isUnlocked) {
+      router.replace('/kelda/login');
+    }
+  }, [isUnlocked, router]);
+
   const activeSession = usefb('activeSession');
 
   const student = usefb(

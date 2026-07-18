@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
-import { ProgressBar, Wide, Btn } from '../../components/parts';
+import { Wide, Btn } from '../../components/parts';
 
 export default function StudentReflectionsScreen() {
   const router = useRouter();
@@ -83,7 +83,6 @@ export default function StudentReflectionsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Reflections" />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <Wide>
           <View style={styles.headerrow}>

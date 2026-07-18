@@ -1,10 +1,5 @@
 
-import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-  useFonts,
-} from '@expo-google-fonts/dm-sans';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, useFonts } from '@expo-google-fonts/dm-sans';
 import { Stack } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useAnonymousAuth } from '../lib/useAnonymousAuth';

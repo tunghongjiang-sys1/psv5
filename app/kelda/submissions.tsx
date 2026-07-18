@@ -1,23 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  ScrollView,
-  TextInput,
-  ActivityIndicator,
-  Pressable,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, ActivityIndicator, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usefb, c, defpers } from '../../lib/helpers';
 import { PsIcon } from '../../components/parts';
 import { StudentProfilePanel } from './student-detail';
-import {
-  computePersonaStatus,
-  parseTranscript,
-} from '../student/interview';
+import { useKeldaState } from '../../lib/keldaState';
+import { computePersonaStatus, parseTranscript } from '../student/interview';
 
 const SIDEBAR_WIDTH = 320;
 
@@ -75,8 +63,15 @@ const summariseInterviewProgress = (s: any) => {
 
 export default function KeldaSubmissionsScreen() {
   const router = useRouter();
+  const { isUnlocked } = useKeldaState();
   const { width } = useWindowDimensions();
   const isWide = width >= 880;
+
+  useEffect(() => {
+    if (!isUnlocked) {
+      router.replace('/kelda/login');
+    }
+  }, [isUnlocked, router]);
 
   const activeSession = usefb('activeSession');
   const studentsData = usefb(

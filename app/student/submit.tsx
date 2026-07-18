@@ -5,12 +5,8 @@ import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, fw, itemsbuy, itemsbor, defpers, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
-import { ProgressBar, Wide, Btn, PsIcon } from '../../components/parts';
-import {
-  computePersonaStatus,
-  getUniquePressedQuestions,
-  parseTranscript,
-} from './interview';
+import { Wide, Btn, PsIcon } from '../../components/parts';
+import { computePersonaStatus, getUniquePressedQuestions, parseTranscript } from './interview';
 
 export default function StudentSummaryScreen() {
   const router = useRouter();
@@ -206,7 +202,6 @@ export default function StudentSummaryScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Summary" />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
         <Wide>
           <Text style={styles.title}>Session Summary:</Text>

@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
 
-export interface StudentState {
-  studentId: string;
-  sessionId: string;
-  studentName: string;
+export interface KeldaState {
+  isUnlocked: boolean;
 }
 
-const STATE_KEY = 'loopietown.studentState.v1';
-const ROUTE_KEY = 'loopietown.lastRoute.v1';
+const STATE_KEY = 'loopietown.keldaState.v1';
+const ROUTE_KEY = 'loopietown.keldaRoute.v1';
 
-const EMPTY_STATE: StudentState = {
-  studentId: '',
-  sessionId: '',
-  studentName: '',
+const EMPTY_STATE: KeldaState = {
+  isUnlocked: false,
 };
 
 const safeGetItem = (key: string): string | null => {
@@ -48,30 +44,28 @@ const safeRemoveItem = (key: string): void => {
   }
 };
 
-const loadInitialState = (): StudentState => {
+const loadInitialState = (): KeldaState => {
   const raw = safeGetItem(STATE_KEY);
   if (!raw) return { ...EMPTY_STATE };
   try {
     const parsed = JSON.parse(raw);
     return {
-      studentId: String(parsed?.studentId ?? ''),
-      sessionId: String(parsed?.sessionId ?? ''),
-      studentName: String(parsed?.studentName ?? ''),
+      isUnlocked: Boolean(parsed?.isUnlocked),
     };
   } catch {
     return { ...EMPTY_STATE };
   }
 };
 
-let globalState: StudentState = loadInitialState();
+let globalState: KeldaState = loadInitialState();
 
 const listeners = new Set<() => void>();
 
-export const studentState = {
-  get(): StudentState {
+export const keldaState = {
+  get(): KeldaState {
     return globalState;
   },
-  set(state: Partial<StudentState>) {
+  set(state: Partial<KeldaState>) {
     globalState = { ...globalState, ...state };
     safeSetItem(STATE_KEY, JSON.stringify(globalState));
     listeners.forEach((l) => l());
@@ -92,17 +86,17 @@ export const studentState = {
     return safeGetItem(ROUTE_KEY) ?? '';
   },
   setLastRoute(route: string) {
-    if (!route || !route.startsWith('/student/')) return;
-    if (route === '/student/name') return;
+    if (!route || !route.startsWith('/kelda/')) return;
+    if (route === '/kelda/login') return;
     safeSetItem(ROUTE_KEY, route);
   },
 };
 
-export function useStudentState() {
-  const [state, setState] = useState<StudentState>(globalState);
+export function useKeldaState() {
+  const [state, setState] = useState<KeldaState>(globalState);
 
   useEffect(() => {
-    return studentState.subscribe(() => {
+    return keldaState.subscribe(() => {
       setState({ ...globalState });
     });
   }, []);

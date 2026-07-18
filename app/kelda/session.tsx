@@ -5,9 +5,18 @@ import { useRouter } from 'expo-router';
 import { db, ref, set, update, remove } from '../../lib/firebaseConfig';
 import { usefb, fw, c, showConfirm, showAlert } from '../../lib/helpers';
 import { Wide, Btn, PsIcon } from '../../components/parts';
+import { useKeldaState } from '../../lib/keldaState';
 
 export default function KeldaSessionScreen() {
   const router = useRouter();
+  const { isUnlocked } = useKeldaState();
+
+  useEffect(() => {
+    if (!isUnlocked) {
+      router.replace('/kelda/login');
+    }
+  }, [isUnlocked, router]);
+
   const [budgetInput, setBudgetInput] = useState('50');
   const [starting, setStarting] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -21,6 +30,7 @@ export default function KeldaSessionScreen() {
   const [shopping, setShopping] = useState(false);
   const [reflections, setReflections] = useState(false);
   const [summary, setSummary] = useState(false);
+  const [forceAssignGroupings, setForceAssignGroupingsState] = useState(false);
 
   const [qList, setQList] = useState<string[]>([
     'What did you learn about planning with seniors in mind?',
@@ -36,6 +46,7 @@ export default function KeldaSessionScreen() {
       setReflections(!!sessionData.unlocked.reflections);
       setSummary(!!sessionData.unlocked.summary);
     }
+    setForceAssignGroupingsState(sessionData?.forceAssignGroupings === true);
     if (sessionData?.reflectionQuestions) {
       const parsed = Array.isArray(sessionData.reflectionQuestions)
         ? sessionData.reflectionQuestions
@@ -119,6 +130,19 @@ export default function KeldaSessionScreen() {
     }
   };
 
+  const toggleForceAssign = async () => {
+    if (!activeSession?.id) return;
+    const nextVal = !forceAssignGroupings;
+    try {
+      await update(ref(db, `sessions/${activeSession.id}`), {
+        forceAssignGroupings: nextVal,
+      });
+      setForceAssignGroupingsState(nextVal);
+    } catch (e: any) {
+      Alert.alert('Error toggling override', e.message);
+    }
+  };
+
   const endSession = async () => {
     if (ending) return;
     showConfirm(
@@ -171,11 +195,23 @@ export default function KeldaSessionScreen() {
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>1. Groupings / Entrance</Text>
-                    <Text style={styles.phasedesc}>Automatically open when student joins</Text>
+                    <Text style={styles.phasedesc}>
+                      Students choose up to 5 peers. Auto-applies once everyone submits, or press the override to advance now.
+                    </Text>
                   </View>
-                  <View style={[styles.statustag, { backgroundColor: c.green }]}>
-                    <Text style={styles.statustagtext}>Always Open</Text>
-                  </View>
+                  <Pressable
+                    onPress={toggleForceAssign}
+                    style={({ pressed }) => [
+                      styles.togglebtn,
+                      { backgroundColor: forceAssignGroupings ? c.orange : c.grey },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                  >
+                    <Text style={styles.togglebtntext}>
+                      {forceAssignGroupings ? 'OVERRIDE ON' : 'OVERRIDE'}
+                    </Text>
+                    <PsIcon name={forceAssignGroupings ? 'padlockUnlock' : 'padlock'} size={16} />
+                  </Pressable>
                 </View>
 
                 <View style={styles.phaserow}>
@@ -300,6 +336,17 @@ export default function KeldaSessionScreen() {
                   icon="forbidden"
                 />
               )}
+
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <Btn
+                  label="Manage Groupings"
+                  onPress={() => router.push('/kelda/groupings')}
+                  color={c.navy}
+                  textColor={c.white}
+                  icon="settings"
+                  style={{ flex: 1 }}
+                />
+              </View>
             </View>
           ) : (
             <View style={styles.formlayout}>

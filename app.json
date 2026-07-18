@@ -4,7 +4,7 @@
     "slug": "projserve",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/mascot.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -12,11 +12,11 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "foregroundImage": "./assets/mascot.png"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/mascot.png"
     },
     "plugins": [
       "expo-router",

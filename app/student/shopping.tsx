@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { db, ref, update } from '../../lib/firebaseConfig';
 import { usefb, itemsbuy, itemsbor, c } from '../../lib/helpers';
 import { useStudentState } from '../../lib/students';
-import { ProgressBar, PsIcon, Wide, Btn } from '../../components/parts';
+import { PsIcon, Wide, Btn } from '../../components/parts';
 import { BUY_IMAGES, BORROW_IMAGES } from '../../lib/shoppingitems';
 
 export default function StudentShoppingScreen() {
@@ -105,8 +105,6 @@ export default function StudentShoppingScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ProgressBar step="Logistics" />
-
       {showNotEnoughMoney && (
         <View style={styles.notenoughbanner}>
           <PsIcon name="forbidden" size={18} />

@@ -1,42 +1,106 @@
-
-import React, { useEffect } from 'react';
-import { Stack, usePathname, useRouter } from 'expo-router'; import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import { useStudentState } from '../../lib/students';
+import React, { useEffect, useMemo } from 'react';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { useStudentState, studentState } from '../../lib/students';
 import { usefb, c } from '../../lib/helpers';
-import { PsIcon } from '../../components/parts';
+import { ProgressBar, PROGRESS_STEPS, PsIcon } from '../../components/parts';
 
 const tabs = [
   { key: 'interview', label: 'Interview', href: '/student/interview' },
   { key: 'shopping', label: 'Plan Logistics', href: '/student/shopping' },
-  { key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard' },
   { key: 'reflections', label: 'Reflections', href: '/student/reflections' },
+  { key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard' },
   { key: 'summary', label: 'Summary', href: '/student/submit' },
 ];
+
+function stepIndexForPath(pathname: string): number {
+  if (pathname.endsWith('/student/groupings')) return 0;
+  if (pathname.startsWith('/student/interview')) return 1;
+  if (pathname.startsWith('/student/shopping')) return 2;
+  if (pathname.startsWith('/student/reflections')) return 3;
+  if (pathname.startsWith('/student/whiteboard')) return 4;
+  if (pathname.startsWith('/student/submit')) return 5;
+  return -1;
+}
 
 export default function StudentLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { studentId, sessionId } = useStudentState();
 
-  const showTabBar = pathname !== '/student/name' && pathname !== '/student/groupings';
+  useEffect(() => {
+    if (pathname && pathname.startsWith('/student/')) {
+      studentState.setLastRoute(pathname);
+    }
+  }, [pathname]);
 
+  const showTabBar = pathname !== '/student/name' && pathname !== '/student/groupings';
+  const showProgressBar = pathname !== '/student/name';
+
+  
   const interviewUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/interview` : null);
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
   const reflectionsUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/reflections` : null);
   const summaryUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/summary` : null);
+  const forceAssignGroupings = usefb(sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null);
+  const studentRecord = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
+  );
+
+  
+  const { unlocked, completed } = useMemo(() => {
+    const u = new Array(PROGRESS_STEPS.length).fill(false) as boolean[];
+    const c = new Array(PROGRESS_STEPS.length).fill(false) as boolean[];
+
+    
+    u[0] = true;
+    
+    
+    c[0] = studentRecord?.viewedAssignment === true || forceAssignGroupings === true;
+
+    
+    
+    
+    u[1] =
+      interviewUnlocked === true ||
+      forceAssignGroupings === true ||
+      studentRecord?.viewedAssignment === true;
+
+    
+    u[2] = shoppingUnlocked === true;
+    u[3] = reflectionsUnlocked === true;
+    u[4] = reflectionsUnlocked === true || summaryUnlocked === true;
+    u[5] = summaryUnlocked === true;
+
+    
+    c[1] = studentRecord?.allInterviewsCompleted === true;
+    c[2] = !!studentRecord?.bought || !!studentRecord?.borrowed;
+    c[3] = !!studentRecord?.reflections && Object.keys(studentRecord.reflections).length > 0;
+    c[4] = !!studentRecord?.whiteboardStrokes || !!studentRecord?.whiteboardNotes;
+    c[5] = studentRecord?.submitted === true;
+
+    return { unlocked: u, completed: c };
+  }, [
+    interviewUnlocked,
+    shoppingUnlocked,
+    reflectionsUnlocked,
+    summaryUnlocked,
+    forceAssignGroupings,
+    studentRecord,
+  ]);
 
   const getLockStatus = (key: string) => {
     switch (key) {
       case 'interview':
-        return interviewUnlocked === true;
+        return unlocked[1];
       case 'shopping':
-        return shoppingUnlocked === true;
+        return unlocked[2];
       case 'reflections':
-        return reflectionsUnlocked === true;
+        return unlocked[3];
       case 'whiteboard':
-        return reflectionsUnlocked === true || summaryUnlocked === true;
+        return unlocked[4];
       case 'summary':
-        return summaryUnlocked === true;
+        return unlocked[5];
       default:
         return false;
     }
@@ -51,17 +115,27 @@ export default function StudentLayout() {
     router.replace(tab.href as any);
   };
 
+  const activeStepIndex = stepIndexForPath(pathname);
+
   return (
     <View style={styles.root}>
+      {showProgressBar && activeStepIndex >= 0 && (
+        <ProgressBar
+          activeIndex={activeStepIndex}
+          unlocked={unlocked}
+          completed={completed}
+        />
+      )}
+
       <View style={styles.content}>
         <Stack screenOptions={{ headerShown: false }} />
       </View>
 
       {showTabBar && (
         <View style={styles.tabbar}>
-          {tabs.map((tab) => {
+          {tabs.map((tab, idx) => {
             const active = pathname.startsWith(tab.href);
-            const isUnlocked = getLockStatus(tab.key);
+            const isUnlocked = unlocked[idx + 1];
 
             return (
               <Pressable

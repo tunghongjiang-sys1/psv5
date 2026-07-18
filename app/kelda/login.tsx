@@ -1,14 +1,26 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mascot } from '../../components/parts';
 import { teachpass, c } from '../../lib/helpers';
+import { keldaState } from '../../lib/keldaState';
 
 export default function TeacherLockScreen() {
   const [code, setCode] = useState('');
   const router = useRouter();
   const display = code.replace(/./g, '●');
+
+  useEffect(() => {
+    if (keldaState.get().isUnlocked) {
+      const last = keldaState.getLastRoute();
+      const dest =
+        last && last !== '/kelda/login' && last.startsWith('/kelda/')
+          ? last
+          : '/kelda/dashboard';
+      router.replace(dest as any);
+    }
+  }, [router]);
 
   const press = useCallback(
     (val: string) => {
@@ -21,7 +33,15 @@ export default function TeacherLockScreen() {
       setCode(next);
       if (next.length >= 4) {
         if (next === teachpass) {
-          setTimeout(() => router.replace('/kelda/dashboard'), 200);
+          keldaState.set({ isUnlocked: true });
+          setTimeout(() => {
+            const last = keldaState.getLastRoute();
+            const dest =
+              last && last !== '/kelda/login' && last.startsWith('/kelda/')
+                ? last
+                : '/kelda/dashboard';
+            router.replace(dest as any);
+          }, 200);
         } else {
           setTimeout(() => {
             Alert.alert('Wrong passcode');
