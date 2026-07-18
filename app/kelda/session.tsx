@@ -1,15 +1,24 @@
-
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, ActivityIndicator, Alert, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, set, update, remove } from '../../lib/firebaseConfig';
-import { usefb, fw, c, showConfirm, showAlert } from '../../lib/helpers';
-import { Wide, Btn, PsIcon } from '../../components/parts';
-import { useKeldaState } from '../../lib/keldaState';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, set, update, remove} from '../../lib/firebaseConfig';
+import {usefb, fw, c, showConfirm, showAlert} from '../../lib/helpers';
+import {Wide, Btn, PsIcon} from '../../components/parts';
+import {useKeldaState} from '../../lib/keldaState';
 
 export default function KeldaSessionScreen() {
   const router = useRouter();
-  const { isUnlocked } = useKeldaState();
+  const {isUnlocked} = useKeldaState();
 
   useEffect(() => {
     if (!isUnlocked) {
@@ -22,9 +31,7 @@ export default function KeldaSessionScreen() {
   const [ending, setEnding] = useState(false);
 
   const activeSession = usefb('activeSession');
-  const sessionData = usefb(
-    activeSession?.id ? `sessions/${activeSession.id}` : null
-  );
+  const sessionData = usefb(activeSession?.id ? `sessions/${activeSession.id}` : null);
 
   const [interview, setInterview] = useState(false);
   const [shopping, setShopping] = useState(false);
@@ -101,7 +108,7 @@ export default function KeldaSessionScreen() {
             summary: false,
           },
           students: {},
-        })
+        }),
       );
       await fw(
         set(ref(db, 'activeSession'), {
@@ -109,7 +116,7 @@ export default function KeldaSessionScreen() {
           status: 'active',
           budget: b,
           startedAt: Date.now(),
-        })
+        }),
       );
     } catch (e: any) {
       Alert.alert('Error starting session', e.message);
@@ -118,7 +125,10 @@ export default function KeldaSessionScreen() {
     }
   };
 
-  const togglePhase = async (phase: 'interview' | 'shopping' | 'reflections' | 'summary', currentVal: boolean) => {
+  const togglePhase = async (
+    phase: 'interview' | 'shopping' | 'reflections' | 'summary',
+    currentVal: boolean,
+  ) => {
     if (!activeSession?.id) return;
     const nextVal = !currentVal;
     try {
@@ -159,7 +169,7 @@ export default function KeldaSessionScreen() {
           showAlert('Error ending session', e.message);
           setEnding(false);
         }
-      }
+      },
     );
   };
 
@@ -184,27 +194,30 @@ export default function KeldaSessionScreen() {
         </Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
         <Wide>
           {isActive ? (
             <View style={styles.controlslayout}>
               <Text style={styles.infotitle}>Session ID: {activeSession.id}</Text>
-              <Text style={styles.infosubtitle}>Configure what students can access in real-time.</Text>
+              <Text style={styles.infosubtitle}>
+                Configure what students can access in real-time.
+              </Text>
 
               <View style={styles.phasecard}>
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>1. Groupings / Entrance</Text>
                     <Text style={styles.phasedesc}>
-                      Students choose up to 5 peers. Auto-applies once everyone submits, or press the override to advance now.
+                      Students choose up to 5 peers. Auto-applies once everyone submits, or press
+                      the override to advance now.
                     </Text>
                   </View>
                   <Pressable
                     onPress={toggleForceAssign}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.togglebtn,
-                      { backgroundColor: forceAssignGroupings ? c.orange : c.grey },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: forceAssignGroupings ? c.orange : c.grey},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
                     <Text style={styles.togglebtntext}>
@@ -221,15 +234,13 @@ export default function KeldaSessionScreen() {
                   </View>
                   <Pressable
                     onPress={() => togglePhase('interview', interview)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.togglebtn,
-                      { backgroundColor: interview ? c.teal : c.grey },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: interview ? c.teal : c.grey},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
-                    <Text style={styles.togglebtntext}>
-                      {interview ? 'Unlocked' : 'Locked'}
-                    </Text>
+                    <Text style={styles.togglebtntext}>{interview ? 'Unlocked' : 'Locked'}</Text>
                     <PsIcon name={interview ? 'padlockUnlock' : 'padlock'} size={16} />
                   </Pressable>
                 </View>
@@ -237,19 +248,19 @@ export default function KeldaSessionScreen() {
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>3. Plan Logistics Phase</Text>
-                    <Text style={styles.phasedesc}>Budget spending, buying and active aging centre borrowing</Text>
+                    <Text style={styles.phasedesc}>
+                      Budget spending, buying and active aging centre borrowing
+                    </Text>
                   </View>
                   <Pressable
                     onPress={() => togglePhase('shopping', shopping)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.togglebtn,
-                      { backgroundColor: shopping ? c.teal : c.grey },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: shopping ? c.teal : c.grey},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
-                    <Text style={styles.togglebtntext}>
-                      {shopping ? 'Unlocked' : 'Locked'}
-                    </Text>
+                    <Text style={styles.togglebtntext}>{shopping ? 'Unlocked' : 'Locked'}</Text>
                     <PsIcon name={shopping ? 'padlockUnlock' : 'padlock'} size={16} />
                   </Pressable>
                 </View>
@@ -257,19 +268,19 @@ export default function KeldaSessionScreen() {
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>4. Reflections Phase</Text>
-                    <Text style={styles.phasedesc}>Write reflection and view other reflections</Text>
+                    <Text style={styles.phasedesc}>
+                      Write reflection and view other reflections
+                    </Text>
                   </View>
                   <Pressable
                     onPress={() => togglePhase('reflections', reflections)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.togglebtn,
-                      { backgroundColor: reflections ? c.teal : c.grey },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: reflections ? c.teal : c.grey},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
-                    <Text style={styles.togglebtntext}>
-                      {reflections ? 'Unlocked' : 'Locked'}
-                    </Text>
+                    <Text style={styles.togglebtntext}>{reflections ? 'Unlocked' : 'Locked'}</Text>
                     <PsIcon name={reflections ? 'padlockUnlock' : 'padlock'} size={16} />
                   </Pressable>
                 </View>
@@ -277,74 +288,119 @@ export default function KeldaSessionScreen() {
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>5. Summary Phase</Text>
-                    <Text style={styles.phasedesc}>Confirm and finalize student submissions and ratings</Text>
+                    <Text style={styles.phasedesc}>
+                      Confirm and finalize student submissions and ratings
+                    </Text>
                   </View>
                   <Pressable
                     onPress={() => togglePhase('summary', summary)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.togglebtn,
-                      { backgroundColor: summary ? c.teal : c.grey },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: summary ? c.teal : c.grey},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
-                    <Text style={styles.togglebtntext}>
-                      {summary ? 'Unlocked' : 'Locked'}
-                    </Text>
+                    <Text style={styles.togglebtntext}>{summary ? 'Unlocked' : 'Locked'}</Text>
                     <PsIcon name={summary ? 'padlockUnlock' : 'padlock'} size={16} />
                   </Pressable>
                 </View>
               </View>
 
-              <View style={[styles.phasecard, { marginTop: 16 }]}>
+              <View style={[styles.phasecard, {marginTop: 16}]}>
                 <Text style={styles.infotitle}>⚙️ Reflection Questions Config</Text>
-                <Text style={styles.infosubtitle}>Customize the questions presented to students on their reflection slides.</Text>
+                <Text style={styles.infosubtitle}>
+                  Customize the questions presented to students on their reflection slides.
+                </Text>
 
                 {qList.map((q, idx) => (
-                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-                    <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 14, flex: 1, color: c.navy, paddingRight: 8 }}>
+                  <View
+                    key={idx}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      paddingVertical: 6,
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#f1f5f9',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontFamily: 'DMSans_500Medium',
+                        fontSize: 14,
+                        flex: 1,
+                        color: c.navy,
+                        paddingRight: 8,
+                      }}
+                    >
                       {idx + 1}. {q}
                     </Text>
-                    <Pressable onPress={() => removeQuestion(idx)} style={{ paddingHorizontal: 8, paddingVertical: 4 }}>
-                      <Text style={{ fontFamily: 'DMSans_700Bold', color: c.red, fontSize: 13 }}>Remove</Text>
+                    <Pressable
+                      onPress={() => removeQuestion(idx)}
+                      style={{paddingHorizontal: 8, paddingVertical: 4}}
+                    >
+                      <Text style={{fontFamily: 'DMSans_700Bold', color: c.red, fontSize: 13}}>
+                        Remove
+                      </Text>
                     </Pressable>
                   </View>
                 ))}
 
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                <View style={{flexDirection: 'row', gap: 8, marginTop: 10}}>
                   <TextInput
-                    style={{ flex: 1, backgroundColor: c.offWhite, borderWidth: 1, borderColor: c.greyLight, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontFamily: 'DMSans_400Regular', fontSize: 13 }}
+                    style={{
+                      flex: 1,
+                      backgroundColor: c.offWhite,
+                      borderWidth: 1,
+                      borderColor: c.greyLight,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      fontFamily: 'DMSans_400Regular',
+                      fontSize: 13,
+                    }}
                     value={newQText}
                     onChangeText={setNewQText}
                     placeholder="Type new reflection question..."
                     placeholderTextColor={c.greyLight}
                   />
-                  <Pressable onPress={addQuestion} style={{ backgroundColor: c.navy, borderRadius: 10, paddingHorizontal: 16, justifyContent: 'center' }}>
-                    <Text style={{ fontFamily: 'DMSans_700Bold', color: c.white, fontSize: 13 }}>+ Add</Text>
+                  <Pressable
+                    onPress={addQuestion}
+                    style={{
+                      backgroundColor: c.navy,
+                      borderRadius: 10,
+                      paddingHorizontal: 16,
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{fontFamily: 'DMSans_700Bold', color: c.white, fontSize: 13}}>
+                      + Add
+                    </Text>
                   </Pressable>
                 </View>
               </View>
 
               {ending ? (
-                <ActivityIndicator color={c.red} size="large" style={{ marginTop: 24 }} />
+                <ActivityIndicator color={c.red} size="large" style={{marginTop: 24}} />
               ) : (
                 <Btn
                   label="End Current Session"
                   onPress={endSession}
                   color={c.red}
                   textColor={c.white}
-                  style={{ marginTop: 24 }}
+                  style={{marginTop: 24}}
                   icon="forbidden"
                 />
               )}
 
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+              <View style={{flexDirection: 'row', gap: 10, marginTop: 12}}>
                 <Btn
                   label="Manage Groupings"
                   onPress={() => router.push('/kelda/groupings')}
                   color={c.navy}
                   textColor={c.white}
                   icon="settings"
-                  style={{ flex: 1 }}
+                  style={{flex: 1}}
                 />
               </View>
             </View>
@@ -372,7 +428,7 @@ export default function KeldaSessionScreen() {
                   onPress={startSession}
                   color={c.orange}
                   textColor={c.white}
-                  style={{ width: '100%', marginTop: 24 }}
+                  style={{width: '100%', marginTop: 24}}
                 />
               )}
             </View>

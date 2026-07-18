@@ -1,4 +1,4 @@
-import type { ImageSourcePropType } from 'react-native';
+import type {ImageSourcePropType} from 'react-native';
 
 export type InterviewPersona = {
   id: string;
@@ -117,7 +117,17 @@ export const interviewPersonas: InterviewPersona[] = [
         ],
       },
       {
-        keywords: ['activity', 'read', 'club', 'join', 'lonely', 'hobby', 'interest', 'share', 'learning'],
+        keywords: [
+          'activity',
+          'read',
+          'club',
+          'join',
+          'lonely',
+          'hobby',
+          'interest',
+          'share',
+          'learning',
+        ],
         reply: [
           'I have several passions! Reading historical books, hosting small poetry circles, and gentle craft workshops enrich my week.',
           'Book sharing, memoir writing, or music appreciation circles suit me well. I enjoy activities where everyone can share ideas at a comfortable pace.',
@@ -256,15 +266,19 @@ export const getInterviewStarterMessage = (persona: InterviewPersona) =>
 export const makeInterviewReply = (
   persona: InterviewPersona,
   question: string,
-  messageCount: number
+  messageCount: number,
 ) => {
   const lower = question.toLowerCase();
   const rule = persona.replyRules.find((item) =>
-    item.keywords.some((keyword) => lower.includes(keyword))
+    item.keywords.some((keyword) => lower.includes(keyword)),
   );
   const fallbackSet = persona.fallbackReplies;
   const followUpSet = persona.followUps;
-  const replySet = Array.isArray(rule?.reply) ? rule?.reply : rule?.reply ? [rule.reply] : fallbackSet;
+  const replySet = Array.isArray(rule?.reply)
+    ? rule?.reply
+    : rule?.reply
+      ? [rule.reply]
+      : fallbackSet;
   const answer = replySet[Math.floor(messageCount / 2) % replySet.length];
   const prompt = followUpSet[Math.floor(messageCount / 2) % followUpSet.length];
 

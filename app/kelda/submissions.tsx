@@ -1,18 +1,27 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TextInput, ActivityIndicator, Pressable, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { usefb, c, defpers } from '../../lib/helpers';
-import { PsIcon } from '../../components/parts';
-import { StudentProfilePanel } from './student-detail';
-import { useKeldaState } from '../../lib/keldaState';
-import { computePersonaStatus, parseTranscript } from '../student/interview';
+import React, {useEffect, useMemo, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {usefb, c, defpers} from '../../lib/helpers';
+import {PsIcon} from '../../components/parts';
+import {StudentProfilePanel} from './student-detail';
+import {useKeldaState} from '../../lib/keldaState';
+import {computePersonaStatus, parseTranscript} from '../student/interview';
 
-const SIDEBAR_WIDTH = 320;
+const sidebarWidth = 320;
 
 type InterviewStatus = 'not_started' | 'in_progress' | 'completed';
 
 const summariseInterviewProgress = (s: any) => {
-
   if (s?.interviewStatuses && typeof s.interviewStatuses === 'object') {
     let completedCount = 0;
     let inProgressCount = 0;
@@ -63,8 +72,8 @@ const summariseInterviewProgress = (s: any) => {
 
 export default function KeldaSubmissionsScreen() {
   const router = useRouter();
-  const { isUnlocked } = useKeldaState();
-  const { width } = useWindowDimensions();
+  const {isUnlocked} = useKeldaState();
+  const {width} = useWindowDimensions();
   const isWide = width >= 880;
 
   useEffect(() => {
@@ -74,9 +83,7 @@ export default function KeldaSubmissionsScreen() {
   }, [isUnlocked, router]);
 
   const activeSession = usefb('activeSession');
-  const studentsData = usefb(
-    activeSession?.id ? `sessions/${activeSession.id}/students` : null
-  );
+  const studentsData = usefb(activeSession?.id ? `sessions/${activeSession.id}/students` : null);
 
   const [search, setSearch] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
@@ -84,7 +91,7 @@ export default function KeldaSubmissionsScreen() {
 
   const students = useMemo(
     () => (studentsData ? Object.values(studentsData) : []) as any[],
-    [studentsData]
+    [studentsData],
   );
 
   const filteredStudents = useMemo(() => {
@@ -98,7 +105,7 @@ export default function KeldaSubmissionsScreen() {
 
   const selectedStudent = useMemo(
     () => students.find((s) => s.id === selectedId) ?? null,
-    [students, selectedId]
+    [students, selectedId],
   );
 
   if (activeSession === undefined || studentsData === undefined) {
@@ -157,7 +164,7 @@ export default function KeldaSubmissionsScreen() {
     } else {
       router.push({
         pathname: '/kelda/student-detail',
-        params: { studentId: id },
+        params: {studentId: id},
       });
     }
   };
@@ -218,23 +225,27 @@ export default function KeldaSubmissionsScreen() {
       <Pressable
         key={s.id}
         onPress={() => handleSelect(s.id)}
-        style={({ pressed }) => [
+        style={({pressed}) => [
           compact ? styles.sidebarlistitem : styles.studentcard,
           isSelected && (compact ? styles.sidebarlistitemselected : styles.studentcardselected),
           pressed && (compact ? styles.sidebarlistpressed : styles.studentcardpressed),
         ]}
       >
         <View style={styles.cardheader}>
-          <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{flex: 1, minWidth: 0}}>
             <Text
-              style={[compact ? styles.sidebaritemname : styles.studentname, isSelected && { color: c.white }]}
+              style={[
+                compact ? styles.sidebaritemname : styles.studentname,
+                isSelected && {color: c.white},
+              ]}
               numberOfLines={1}
             >
               {s.name?.trim() ? s.name : '(unnamed student)'}
             </Text>
             {compact && (
               <Text style={styles.sidebaritemmeta} numberOfLines={1}>
-                {s.submitted ? 'Submitted' : 'In progress'} · {boughtCount} bought · {chatCount} chats
+                {s.submitted ? 'Submitted' : 'In progress'} · {boughtCount} bought · {chatCount}{' '}
+                chats
               </Text>
             )}
           </View>
@@ -242,20 +253,11 @@ export default function KeldaSubmissionsScreen() {
             style={[
               styles.statusbadge,
               {
-                backgroundColor: isSelected
-                  ? c.white
-                  : s.submitted
-                    ? c.green
-                    : c.grey,
+                backgroundColor: isSelected ? c.white : s.submitted ? c.green : c.grey,
               },
             ]}
           >
-            <Text
-              style={[
-                styles.statusbadgetext,
-                isSelected && { color: c.navy },
-              ]}
-            >
+            <Text style={[styles.statusbadgetext, isSelected && {color: c.navy}]}>
               {s.submitted ? 'Submitted' : 'In Progress'}
             </Text>
           </View>
@@ -299,12 +301,7 @@ export default function KeldaSubmissionsScreen() {
               },
             ]}
           />
-          <Text
-            style={[
-              styles.interviewstatustext,
-              isSelected && { color: c.white },
-            ]}
-          >
+          <Text style={[styles.interviewstatustext, isSelected && {color: c.white}]}>
             {interviewLabel}
           </Text>
         </View>
@@ -316,16 +313,14 @@ export default function KeldaSubmissionsScreen() {
     return (
       <SafeAreaView style={styles.root}>
         {renderNavbar()}
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+        <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
           {renderExportModal()}
           <Text style={styles.sectionheader}>Students Joined ({students.length})</Text>
           <View style={styles.listcontainer}>
             {students.map((s) => renderStudentRow(s, false))}
             {students.length === 0 && (
               <View style={styles.nostudentsbox}>
-                <Text style={styles.nostudentstext}>
-                  No students have joined this session yet.
-                </Text>
+                <Text style={styles.nostudentstext}>No students have joined this session yet.</Text>
               </View>
             )}
           </View>
@@ -380,7 +375,7 @@ export default function KeldaSubmissionsScreen() {
         </View>
 
         <View style={styles.detailpane}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.detailcontent}>
+          <ScrollView style={{flex: 1}} contentContainerStyle={styles.detailcontent}>
             {renderExportModal()}
             {selectedStudent ? (
               <StudentProfilePanel
@@ -600,7 +595,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sidebar: {
-    width: SIDEBAR_WIDTH,
+    width: sidebarWidth,
     backgroundColor: c.white,
     borderRightWidth: 1,
     borderRightColor: '#e2e8f0',

@@ -1,7 +1,14 @@
-
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Pressable, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  Pressable,
+  useWindowDimensions,
+} from 'react-native';
+import {useRouter} from 'expo-router';
 
 const c = {
   teal: '#4ECDC4',
@@ -13,7 +20,7 @@ const c = {
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
   const wide = width >= 600;
 
   return (
@@ -21,32 +28,34 @@ export default function WelcomeScreen() {
       <View style={styles.content}>
         <Image
           source={require('../assets/mascot.png')}
-          style={{ width: wide ? 130 : 110, height: (wide ? 130 : 110) * 1.25 }}
+          style={{width: wide ? 130 : 110, height: (wide ? 130 : 110) * 1.25}}
           resizeMode="contain"
         />
-        <Text style={[styles.title, { fontSize: wide ? 64 : 56, lineHeight: wide ? 68 : 60 }]}>LOOPIE TOWN</Text>
+        <Text style={[styles.title, {fontSize: wide ? 64 : 56, lineHeight: wide ? 68 : 60}]}>
+          LOOPIE TOWN
+        </Text>
         <Text style={styles.subtitle}>From Ideas to Impact</Text>
         <View style={styles.buttoncontainer}>
           <Pressable
             onPress={() => router.push('/student/name')}
-            style={({ pressed }) => [
+            style={({pressed}) => [
               styles.button,
-              { backgroundColor: c.navy },
+              {backgroundColor: c.navy},
               pressed && styles.buttonpressed,
             ]}
           >
-            <Text style={[styles.buttontext, { color: c.white }]}>I'm a Student</Text>
+            <Text style={[styles.buttontext, {color: c.white}]}>I'm a Student</Text>
           </Pressable>
 
           <Pressable
             onPress={() => router.push('/kelda/login')}
-            style={({ pressed }) => [
+            style={({pressed}) => [
               styles.button,
-              { backgroundColor: c.yellow },
+              {backgroundColor: c.yellow},
               pressed && styles.buttonpressed,
             ]}
           >
-            <Text style={[styles.buttontext, { color: c.navy }]}>I'm a Teacher</Text>
+            <Text style={[styles.buttontext, {color: c.navy}]}>I'm a Teacher</Text>
           </Pressable>
         </View>
       </View>
@@ -89,7 +98,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 4,

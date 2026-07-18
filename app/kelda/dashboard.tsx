@@ -1,14 +1,13 @@
-
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { usefb, c } from '../../lib/helpers';
-import { Mascot, PsIcon, Wide, Btn } from '../../components/parts';
-import { useKeldaState, keldaState } from '../../lib/keldaState';
+import React, {useEffect} from 'react';
+import {View,Text,StyleSheet,SafeAreaView,ScrollView,ActivityIndicator,Pressable,} from 'react-native';
+import {useRouter} from 'expo-router';
+import {usefb, c} from '../../lib/helpers';
+import {Mascot, PsIcon, Wide, Btn} from '../../components/parts';
+import {useKeldaState, keldaState} from '../../lib/keldaState';
 
 export default function TeacherHomeScreen() {
   const router = useRouter();
-  const { isUnlocked } = useKeldaState();
+  const {isUnlocked} = useKeldaState();
 
   useEffect(() => {
     if (!isUnlocked) {
@@ -53,10 +52,10 @@ export default function TeacherHomeScreen() {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
         <Wide>
           {isActive ? (
-              <View style={styles.dashboardcontainer}>
+            <View style={styles.dashboardcontainer}>
               <View style={styles.activebanner}>
                 <PsIcon name="complete" size={22} />
                 <Text style={styles.activebannertext}>
@@ -82,7 +81,12 @@ export default function TeacherHomeScreen() {
                 <View style={styles.statusrow}>
                   <Text style={styles.statuslabelname}>Interview Phase:</Text>
                   <View style={styles.statusvalrow}>
-                    <Text style={[styles.statusval, unlocked?.interview ? styles.valunlocked : styles.vallocked]}>
+                    <Text
+                      style={[
+                        styles.statusval,
+                        unlocked?.interview ? styles.valunlocked : styles.vallocked,
+                      ]}
+                    >
                       {unlocked?.interview ? 'Unlocked' : 'Locked'}
                     </Text>
                     <PsIcon name={unlocked?.interview ? 'padlockUnlock' : 'padlock'} size={16} />
@@ -91,7 +95,12 @@ export default function TeacherHomeScreen() {
                 <View style={styles.statusrow}>
                   <Text style={styles.statuslabelname}>Plan Logistics Phase:</Text>
                   <View style={styles.statusvalrow}>
-                    <Text style={[styles.statusval, unlocked?.shopping ? styles.valunlocked : styles.vallocked]}>
+                    <Text
+                      style={[
+                        styles.statusval,
+                        unlocked?.shopping ? styles.valunlocked : styles.vallocked,
+                      ]}
+                    >
                       {unlocked?.shopping ? 'Unlocked' : 'Locked'}
                     </Text>
                     <PsIcon name={unlocked?.shopping ? 'padlockUnlock' : 'padlock'} size={16} />
@@ -100,7 +109,12 @@ export default function TeacherHomeScreen() {
                 <View style={styles.statusrow}>
                   <Text style={styles.statuslabelname}>Reflections Phase:</Text>
                   <View style={styles.statusvalrow}>
-                    <Text style={[styles.statusval, unlocked?.reflections ? styles.valunlocked : styles.vallocked]}>
+                    <Text
+                      style={[
+                        styles.statusval,
+                        unlocked?.reflections ? styles.valunlocked : styles.vallocked,
+                      ]}
+                    >
                       {unlocked?.reflections ? 'Unlocked' : 'Locked'}
                     </Text>
                     <PsIcon name={unlocked?.reflections ? 'padlockUnlock' : 'padlock'} size={16} />
@@ -109,7 +123,12 @@ export default function TeacherHomeScreen() {
                 <View style={styles.statusrow}>
                   <Text style={styles.statuslabelname}>Summary Phase:</Text>
                   <View style={styles.statusvalrow}>
-                    <Text style={[styles.statusval, unlocked?.summary ? styles.valunlocked : styles.vallocked]}>
+                    <Text
+                      style={[
+                        styles.statusval,
+                        unlocked?.summary ? styles.valunlocked : styles.vallocked,
+                      ]}
+                    >
                       {unlocked?.summary ? 'Unlocked' : 'Locked'}
                     </Text>
                     <PsIcon name={unlocked?.summary ? 'padlockUnlock' : 'padlock'} size={16} />
@@ -123,7 +142,7 @@ export default function TeacherHomeScreen() {
                   onPress={() => router.push('/kelda/session')}
                   color={c.purple}
                   textColor={c.white}
-                  style={{ width: '100%', marginTop: 16 }}
+                  style={{width: '100%', marginTop: 16}}
                   icon="settings"
                 />
                 <Btn
@@ -131,7 +150,7 @@ export default function TeacherHomeScreen() {
                   onPress={() => router.push('/kelda/submissions')}
                   color={c.navy}
                   textColor={c.white}
-                  style={{ width: '100%', marginTop: 12 }}
+                  style={{width: '100%', marginTop: 12}}
                   icon="checklist"
                 />
               </View>
@@ -139,16 +158,14 @@ export default function TeacherHomeScreen() {
           ) : (
             <View style={styles.inactivecontainer}>
               <View style={styles.inactivebanner}>
-                <Text style={styles.inactivebannertext}>
-                  No active session. Start one below!
-                </Text>
+                <Text style={styles.inactivebannertext}>No active session. Start one below!</Text>
               </View>
               <Btn
                 label="Start a New Session"
                 onPress={() => router.push('/kelda/session')}
                 color={c.orange}
                 textColor={c.white}
-                style={{ width: '100%', marginTop: 16 }}
+                style={{width: '100%', marginTop: 16}}
               />
             </View>
           )}

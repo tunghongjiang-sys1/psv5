@@ -1,17 +1,27 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, useWindowDimensions, SafeAreaView, Image, ImageSourcePropType } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { usefb, itemsbuy, itemsbor, c } from '../../lib/helpers';
-import { useStudentState } from '../../lib/students';
-import { PsIcon, Wide, Btn } from '../../components/parts';
-import { BUY_IMAGES, BORROW_IMAGES } from '../../lib/shoppingitems';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Alert,
+  useWindowDimensions,
+  SafeAreaView,
+  Image,
+  ImageSourcePropType,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {usefb, itemsbuy, itemsbor, c} from '../../lib/helpers';
+import {useStudentState} from '../../lib/students';
+import {PsIcon, Wide, Btn} from '../../components/parts';
+import {buyImages, borrowImages} from '../../lib/shoppingitems';
 
 export default function StudentShoppingScreen() {
   const router = useRouter();
-  const { studentId, sessionId } = useStudentState();
-  const { width } = useWindowDimensions();
+  const {studentId, sessionId} = useStudentState();
+  const {width} = useWindowDimensions();
 
   useEffect(() => {
     if (!studentId || !sessionId) {
@@ -20,14 +30,20 @@ export default function StudentShoppingScreen() {
   }, [studentId, sessionId]);
 
   const budget = usefb(sessionId ? `sessions/${sessionId}/budget` : null) ?? 50;
-  const reflectionsUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/reflections` : null);
+  const reflectionsUnlocked = usefb(
+    sessionId ? `sessions/${sessionId}/unlocked/reflections` : null,
+  );
 
   const [bought, setBought] = useState<Record<string, number>>({});
   const [borrowed, setBorrowed] = useState<Record<string, number>>({});
   const initialised = useRef(false);
 
-  const fbBought = usefb(sessionId && studentId ? `sessions/${sessionId}/students/${studentId}/bought` : null);
-  const fbBorrowed = usefb(sessionId && studentId ? `sessions/${sessionId}/students/${studentId}/borrowed` : null);
+  const fbBought = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}/bought` : null,
+  );
+  const fbBorrowed = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}/borrowed` : null,
+  );
 
   useEffect(() => {
     if (!initialised.current && fbBought !== undefined && fbBorrowed !== undefined) {
@@ -76,12 +92,12 @@ export default function StudentShoppingScreen() {
         triggerNotEnoughMoney();
         return;
       }
-      setBought((prev: any) => ({ ...prev, [item.id]: next }));
+      setBought((prev: any) => ({...prev, [item.id]: next}));
       await update(ref(db, `sessions/${sessionId}/students/${studentId}/bought`), {
         [item.id]: next,
       });
     },
-    [bought, remaining, sessionId, studentId, triggerNotEnoughMoney]
+    [bought, remaining, sessionId, studentId, triggerNotEnoughMoney],
   );
 
   const updateBorrow = useCallback(
@@ -89,19 +105,24 @@ export default function StudentShoppingScreen() {
       const current = borrowed[item.id] || 0;
       const next = Math.min(item.available, Math.max(0, current + delta));
       if (next === current) return;
-      setBorrowed((prev: any) => ({ ...prev, [item.id]: next }));
+      setBorrowed((prev: any) => ({...prev, [item.id]: next}));
       await update(ref(db, `sessions/${sessionId}/students/${studentId}/borrowed`), {
         [item.id]: next,
       });
     },
-    [borrowed, sessionId, studentId]
+    [borrowed, sessionId, studentId],
   );
 
   const isTablet = width >= 768;
   const isDesktop = width >= 1100;
   const shopCardWidth = isDesktop ? '18%' : isTablet ? '22%' : '44%';
 
-  const categories = ['Stationery & Craft', 'Food & Drinks', 'Household & Personal Care', 'Activities & Events'];
+  const categories = [
+    'Stationery & Craft',
+    'Food & Drinks',
+    'Household & Personal Care',
+    'Activities & Events',
+  ];
 
   return (
     <SafeAreaView style={styles.root}>
@@ -117,12 +138,13 @@ export default function StudentShoppingScreen() {
         <Text style={styles.budgetleft}>${remaining} left</Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={{padding: 20}}>
         <Wide>
-
           <View style={styles.sectionheadercontainer}>
             <Text style={styles.plainsectiontitle}>Active Aging Centre</Text>
-            <Text style={styles.sectionsubtitle}>Borrow resources and equipment for free from the centre</Text>
+            <Text style={styles.sectionsubtitle}>
+              Borrow resources and equipment for free from the centre
+            </Text>
           </View>
 
           <View style={styles.borrowgrid}>
@@ -141,14 +163,11 @@ export default function StudentShoppingScreen() {
                   ]}
                 >
                   <Image
-                    source={BORROW_IMAGES[item.id] || require('../../assets/mascot.png')}
+                    source={borrowImages[item.id] || require('../../assets/mascot.png')}
                     style={styles.itemimage}
                   />
                   <View style={styles.counterrow}>
-                    <Pressable
-                      onPress={() => updateBorrow(item, -1)}
-                      style={styles.counterbutton}
-                    >
+                    <Pressable onPress={() => updateBorrow(item, -1)} style={styles.counterbutton}>
                       <Text style={styles.counterbuttontext}>-</Text>
                     </Pressable>
                     <Text style={styles.countervalue}>{borrowedCount}</Text>
@@ -157,7 +176,7 @@ export default function StudentShoppingScreen() {
                       disabled={isBorrowMaxed}
                       style={[
                         styles.counterbutton,
-                        { backgroundColor: c.tealLight },
+                        {backgroundColor: c.tealLight},
                         isBorrowMaxed && styles.counterbuttondisabled,
                       ]}
                     >
@@ -169,12 +188,14 @@ export default function StudentShoppingScreen() {
             })}
           </View>
 
-          <View style={[styles.sectionheadercontainer, { marginTop: 24 }]}>
+          <View style={[styles.sectionheadercontainer, {marginTop: 24}]}>
             <View style={styles.sectiontitlewithicon}>
               <PsIcon name="grocery" size={22} />
               <Text style={styles.sectiontitle}>Items to be Bought</Text>
             </View>
-            <Text style={styles.sectionsubtitle}>Purchase additional items using your allocated budget</Text>
+            <Text style={styles.sectionsubtitle}>
+              Purchase additional items using your allocated budget
+            </Text>
           </View>
 
           {categories.map((cat) => {
@@ -186,22 +207,22 @@ export default function StudentShoppingScreen() {
                 <Text style={styles.categorytitle}>{cat}</Text>
                 <View style={styles.buygrid}>
                   {catItems.map((item) => (
-                    <View key={item.id} style={[styles.buycard, { width: shopCardWidth }]}>
+                    <View key={item.id} style={[styles.buycard, {width: shopCardWidth}]}>
                       <Image
-                        source={BUY_IMAGES[item.id as keyof typeof BUY_IMAGES] || require('../../assets/mascot.png')}
+                        source={
+                          buyImages[item.id as keyof typeof buyImages] ||
+                          require('../../assets/mascot.png')
+                        }
                         style={styles.itemimage}
                       />
                       <View style={styles.counterrow}>
-                        <Pressable
-                          onPress={() => updateBuy(item, -1)}
-                          style={styles.counterbutton}
-                        >
+                        <Pressable onPress={() => updateBuy(item, -1)} style={styles.counterbutton}>
                           <Text style={styles.counterbuttontext}>-</Text>
                         </Pressable>
                         <Text style={styles.countervalue}>{bought[item.id] || 0}</Text>
                         <Pressable
                           onPress={() => updateBuy(item, 1)}
-                          style={[styles.counterbutton, { backgroundColor: c.teal }]}
+                          style={[styles.counterbutton, {backgroundColor: c.teal}]}
                         >
                           <Text style={styles.counterbuttontext}>+</Text>
                         </Pressable>
@@ -219,13 +240,11 @@ export default function StudentShoppingScreen() {
               onPress={() => router.push('/student/reflections')}
               color={c.purple}
               textColor={c.white}
-              style={{ marginTop: 24 }}
+              style={{marginTop: 24}}
             />
           ) : (
             <View style={styles.lockbox}>
-              <Text style={styles.locktext}>
-                Reflections unlocks when teacher is ready
-              </Text>
+              <Text style={styles.locktext}>Reflections unlocks when teacher is ready</Text>
             </View>
           )}
         </Wide>

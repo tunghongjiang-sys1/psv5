@@ -1,7 +1,14 @@
-
-import React, { memo } from 'react';
-import { View, Text, Image, ImageSourcePropType, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { c } from '../lib/helpers';
+import React, {memo} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
+import {c} from '../lib/helpers';
 
 export type PsIconName =
   | 'checklist'
@@ -13,7 +20,7 @@ export type PsIconName =
   | 'padlockUnlock'
   | 'settings';
 
-const PS_ICONS: Record<PsIconName, ImageSourcePropType> = {
+const psIcons: Record<PsIconName, ImageSourcePropType> = {
   checklist: require('../assets/icons for ps/checklist.png'),
   complete: require('../assets/icons for ps/complete.png'),
   forbidden: require('../assets/icons for ps/forbidden.png'),
@@ -25,38 +32,32 @@ const PS_ICONS: Record<PsIconName, ImageSourcePropType> = {
 };
 
 export const PsIcon = memo(
-  ({ name, size = 18, style }: { name: PsIconName; size?: number; style?: any }) => (
+  ({name, size = 18, style}: {name: PsIconName; size?: number; style?: any}) => (
     <Image
-      source={PS_ICONS[name]}
-      style={[{ width: size, height: size, resizeMode: 'contain' }, style]}
+      source={psIcons[name]}
+      style={[{width: size, height: size, resizeMode: 'contain'}, style]}
     />
-  )
+  ),
 );
 
-export const Mascot = memo(({ size = 60 }: { size?: number }) => (
+export const Mascot = memo(({size = 60}: {size?: number}) => (
   <Image
     source={require('../assets/mascot.png')}
-    style={{ width: size, height: size * 1.25 }}
+    style={{width: size, height: size * 1.25}}
     resizeMode="contain"
   />
 ));
 
-export const Wide = ({ children, style }: { children?: React.ReactNode; style?: any }) => {
-  const { width } = useWindowDimensions();
+export const Wide = ({children, style}: {children?: React.ReactNode; style?: any}) => {
+  const {width} = useWindowDimensions();
   return (
-    <View
-      style={[
-        { width: '100%' },
-        width >= 900 && { maxWidth: 860, alignSelf: 'center' },
-        style,
-      ]}
-    >
+    <View style={[{width: '100%'}, width >= 900 && {maxWidth: 860, alignSelf: 'center'}, style]}>
       {children}
     </View>
   );
 };
 
-export const PROGRESS_STEPS = [
+export const progressSteps = [
   'Groupings',
   'Interview',
   'Plan Logistics',
@@ -66,13 +67,12 @@ export const PROGRESS_STEPS = [
 ] as const;
 
 export type ProgressBarProps = {
-  
   step?: string;
-  
+
   activeIndex?: number;
-  
+
   unlocked?: boolean[];
-  
+
   completed?: boolean[];
 };
 
@@ -80,8 +80,8 @@ export const ProgressBar = memo((props: ProgressBarProps) => {
   const activeIndex =
     typeof props.activeIndex === 'number'
       ? props.activeIndex
-      : PROGRESS_STEPS.indexOf((props.step || 'Groupings') as any);
-  const totalSteps = PROGRESS_STEPS.length;
+      : progressSteps.indexOf((props.step || 'Groupings') as any);
+  const totalSteps = progressSteps.length;
   const unlocked =
     props.unlocked && props.unlocked.length === totalSteps
       ? props.unlocked
@@ -100,16 +100,12 @@ export const ProgressBar = memo((props: ProgressBarProps) => {
 
   return (
     <View style={styles.progBarRoot}>
-      {PROGRESS_STEPS.map((s, i) => (
+      {progressSteps.map((s, i) => (
         <React.Fragment key={s}>
-          {i > 0 && (
-            <View
-              style={[styles.progLine, { backgroundColor: lineColor(i - 1) }]}
-            />
-          )}
-          <View style={{ alignItems: 'center' }}>
+          {i > 0 && <View style={[styles.progLine, {backgroundColor: lineColor(i - 1)}]} />}
+          <View style={{alignItems: 'center'}}>
             {i === activeIndex ? (
-              <View style={{ alignItems: 'center' }}>
+              <View style={{alignItems: 'center'}}>
                 <View style={styles.progActiveBadge}>
                   <Text style={styles.progActiveText}>{s}</Text>
                 </View>
@@ -149,30 +145,25 @@ interface BtnProps {
   icon?: PsIconName;
 }
 
-export const Btn = memo(({ label, onPress, color = c.yellow, textColor = c.navy, style, disabled, icon }: BtnProps) => (
-  <Pressable
-    onPress={onPress}
-    disabled={disabled}
-    style={({ pressed }) => [
-      styles.btn,
-      { backgroundColor: disabled ? c.greyLight : color },
-      pressed && !disabled && { opacity: 0.85 },
-      style,
-    ]}
-  >
-    <View style={styles.btnContent}>
-      {icon && <PsIcon name={icon} size={20} />}
-      <Text
-        style={[
-          styles.btnText,
-          { color: disabled ? c.grey : textColor },
-        ]}
-      >
-        {label}
-      </Text>
-    </View>
-  </Pressable>
-));
+export const Btn = memo(
+  ({label, onPress, color = c.yellow, textColor = c.navy, style, disabled, icon}: BtnProps) => (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({pressed}) => [
+        styles.btn,
+        {backgroundColor: disabled ? c.greyLight : color},
+        pressed && !disabled && {opacity: 0.85},
+        style,
+      ]}
+    >
+      <View style={styles.btnContent}>
+        {icon && <PsIcon name={icon} size={20} />}
+        <Text style={[styles.btnText, {color: disabled ? c.grey : textColor}]}>{label}</Text>
+      </View>
+    </Pressable>
+  ),
+);
 
 const styles = StyleSheet.create({
   progBarRoot: {
@@ -213,7 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 4,

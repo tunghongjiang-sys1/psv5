@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect} from 'react';
 
 export interface StudentState {
   studentId: string;
@@ -6,10 +6,10 @@ export interface StudentState {
   studentName: string;
 }
 
-const STATE_KEY = 'loopietown.studentState.v1';
-const ROUTE_KEY = 'loopietown.lastRoute.v1';
+const stateKey = 'loopietown.studentState.v1';
+const routeKey = 'loopietown.lastRoute.v1';
 
-const EMPTY_STATE: StudentState = {
+const emptyState: StudentState = {
   studentId: '',
   sessionId: '',
   studentName: '',
@@ -32,9 +32,7 @@ const safeSetItem = (key: string, value: string): void => {
   }
   try {
     window.localStorage.setItem(key, value);
-  } catch {
-    
-  }
+  } catch {}
 };
 
 const safeRemoveItem = (key: string): void => {
@@ -43,14 +41,12 @@ const safeRemoveItem = (key: string): void => {
   }
   try {
     window.localStorage.removeItem(key);
-  } catch {
-    
-  }
+  } catch {}
 };
 
 const loadInitialState = (): StudentState => {
-  const raw = safeGetItem(STATE_KEY);
-  if (!raw) return { ...EMPTY_STATE };
+  const raw = safeGetItem(stateKey);
+  if (!raw) return {...emptyState};
   try {
     const parsed = JSON.parse(raw);
     return {
@@ -59,7 +55,7 @@ const loadInitialState = (): StudentState => {
       studentName: String(parsed?.studentName ?? ''),
     };
   } catch {
-    return { ...EMPTY_STATE };
+    return {...emptyState};
   }
 };
 
@@ -72,8 +68,8 @@ export const studentState = {
     return globalState;
   },
   set(state: Partial<StudentState>) {
-    globalState = { ...globalState, ...state };
-    safeSetItem(STATE_KEY, JSON.stringify(globalState));
+    globalState = {...globalState, ...state};
+    safeSetItem(stateKey, JSON.stringify(globalState));
     listeners.forEach((l) => l());
   },
   subscribe(listener: () => void) {
@@ -83,18 +79,18 @@ export const studentState = {
     };
   },
   clear() {
-    globalState = { ...EMPTY_STATE };
-    safeRemoveItem(STATE_KEY);
-    safeRemoveItem(ROUTE_KEY);
+    globalState = {...emptyState};
+    safeRemoveItem(stateKey);
+    safeRemoveItem(routeKey);
     listeners.forEach((l) => l());
   },
   getLastRoute(): string {
-    return safeGetItem(ROUTE_KEY) ?? '';
+    return safeGetItem(routeKey) ?? '';
   },
   setLastRoute(route: string) {
     if (!route || !route.startsWith('/student/')) return;
     if (route === '/student/name') return;
-    safeSetItem(ROUTE_KEY, route);
+    safeSetItem(routeKey, route);
   },
 };
 
@@ -103,7 +99,7 @@ export function useStudentState() {
 
   useEffect(() => {
     return studentState.subscribe(() => {
-      setState({ ...globalState });
+      setState({...globalState});
     });
   }, []);
 

@@ -1,6 +1,6 @@
-import { ImageSourcePropType } from 'react-native';
+import {ImageSourcePropType} from 'react-native';
 
-export const BUY_IMAGES: Record<string, ImageSourcePropType> = {
+export const buyImages: Record<string, ImageSourcePropType> = {
   colored_markers: require('../assets/one_icon_one_png_named/01_coloured_markers_dollar3_per_packet.png'),
   painting_kit: require('../assets/one_icon_one_png_named/02_painting_kit_dollar5_per_kit.png'),
   origami_paper: require('../assets/one_icon_one_png_named/03_origami_paper_dollar3_per_packet.png'),
@@ -49,7 +49,7 @@ export const BUY_IMAGES: Record<string, ImageSourcePropType> = {
   facial_cleanser: require('../assets/one_icon_one_png_named/58_facial_cleanser_dollar6_per_bottle.png'),
 };
 
-export const BORROW_IMAGES: Record<string, ImageSourcePropType> = {
+export const borrowImages: Record<string, ImageSourcePropType> = {
   color_pencils: require('../assets/one_icon_one_png_named/21_colour_pencils_available_10_packs.png'),
   crayons: require('../assets/one_icon_one_png_named/22_crayons_available_10_packs.png'),
   av_system: require('../assets/one_icon_one_png_named/23_av_system_available_1.png'),

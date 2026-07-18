@@ -1,16 +1,36 @@
-
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, SafeAreaView, Share, Pressable, Image, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { usefb, fw, itemsbuy, itemsbor, defpers, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
-import { useStudentState } from '../../lib/students';
-import { Wide, Btn, PsIcon } from '../../components/parts';
-import { computePersonaStatus, getUniquePressedQuestions, parseTranscript } from './interview';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  Share,
+  Pressable,
+  Image,
+  Platform,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {
+  usefb,
+  fw,
+  itemsbuy,
+  itemsbor,
+  defpers,
+  c,
+  normalizeReflectionQuestions,
+  getReflectionAnswers,
+} from '../../lib/helpers';
+import {useStudentState} from '../../lib/students';
+import {Wide, Btn, PsIcon} from '../../components/parts';
+import {computePersonaStatus, getUniquePressedQuestions, parseTranscript} from './interview';
 
 export default function StudentSummaryScreen() {
   const router = useRouter();
-  const { studentId, sessionId, studentName } = useStudentState();
+  const {studentId, sessionId, studentName} = useStudentState();
   const [submitting, setSubmitting] = useState(false);
   const [rating, setRating] = useState(0);
 
@@ -20,7 +40,9 @@ export default function StudentSummaryScreen() {
     }
   }, [studentId, sessionId]);
 
-  const student = usefb(sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null);
+  const student = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
+  );
   const rawQuestions = usefb(sessionId ? `sessions/${sessionId}/reflectionQuestions` : null);
   const questions = normalizeReflectionQuestions(rawQuestions);
 
@@ -49,7 +71,7 @@ export default function StudentSummaryScreen() {
         update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
           submitted: true,
           rating,
-        })
+        }),
       );
       Alert.alert('Session Ended!', 'Your work and feedback have been submitted to your teacher.');
     } catch (e: any) {
@@ -94,7 +116,7 @@ export default function StudentSummaryScreen() {
 
     lines.push('INTERVIEWS');
     lines.push('----------');
-    interviewProgress.forEach(({ persona, pressedCount, required, completed }) => {
+    interviewProgress.forEach(({persona, pressedCount, required, completed}) => {
       const mark = completed ? '[x]' : '[ ]';
       lines.push(`  ${mark} ${persona.name}  (${pressedCount} / ${required} questions)`);
     });
@@ -106,10 +128,12 @@ export default function StudentSummaryScreen() {
       lines.push('  (no interview questions answered)');
     } else {
       const flattenForTxt = (value: string) =>
-        String(value ?? '').replace(/[\r\n]+/g, ' ').trim();
-      chattedPersonas.forEach(({ persona, messages, pressedCount, required }) => {
+        String(value ?? '')
+          .replace(/[\r\n]+/g, ' ')
+          .trim();
+      chattedPersonas.forEach(({persona, messages, pressedCount, required}) => {
         lines.push(
-          `  ${persona.name} (Age ${persona.age}) — ${pressedCount} / ${required} questions answered`
+          `  ${persona.name} (Age ${persona.age}) — ${pressedCount} / ${required} questions answered`,
         );
         messages.forEach((m) => {
           const speaker = m.role === 'user' ? 'You' : persona.name;
@@ -124,7 +148,7 @@ export default function StudentSummaryScreen() {
     if (reflectionQA.length === 0) {
       lines.push('  (no questions)');
     } else {
-      reflectionQA.forEach(({ question, answer }, idx) => {
+      reflectionQA.forEach(({question, answer}, idx) => {
         lines.push(`  Q${idx + 1}: ${question}`);
         lines.push(`  A: ${answer || '(no answer yet)'}`);
         lines.push('');
@@ -145,7 +169,7 @@ export default function StudentSummaryScreen() {
     const text = lines.join('\n');
 
     if (Platform.OS === 'web') {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const safe = (student.name || 'student').replace(/[^a-z0-9_]+/gi, '_');
       const link = document.createElement('a');
@@ -182,8 +206,7 @@ export default function StudentSummaryScreen() {
     const pressed = getUniquePressedQuestions(messages, p);
     const required = p.quickQuestions.length;
 
-    const status =
-      student?.interviewStatuses?.[p.id] ?? computePersonaStatus(messages, p);
+    const status = student?.interviewStatuses?.[p.id] ?? computePersonaStatus(messages, p);
     return {
       persona: p,
       messages,
@@ -194,7 +217,7 @@ export default function StudentSummaryScreen() {
     };
   });
   const chattedPersonas = interviewProgress.filter((entry) =>
-    entry.messages.some((m) => m.role === 'user')
+    entry.messages.some((m) => m.role === 'user'),
   );
   const chatPersonasComplete = interviewProgress.filter((entry) => entry.completed);
   const chatPersonasPartial = interviewProgress.filter((entry) => !entry.completed);
@@ -202,7 +225,7 @@ export default function StudentSummaryScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={{padding: 24}}>
         <Wide>
           <Text style={styles.title}>Session Summary:</Text>
 
@@ -221,7 +244,9 @@ export default function StudentSummaryScreen() {
                 )}
               </View>
 
-              <Text style={[styles.cardheader, { marginTop: 16 }]}>Active Aging Centre (Borrowed)</Text>
+              <Text style={[styles.cardheader, {marginTop: 16}]}>
+                Active Aging Centre (Borrowed)
+              </Text>
               <View style={styles.itemsbox}>
                 {borrowedItems.length === 0 ? (
                   <Text style={styles.emptytext}>Nothing borrowed</Text>
@@ -235,13 +260,13 @@ export default function StudentSummaryScreen() {
               </View>
             </View>
 
-            <View style={[styles.summarycard, { flex: 1 }]}>
+            <View style={[styles.summarycard, {flex: 1}]}>
               <Text style={styles.cardheader}>Interviews Completed</Text>
               <View style={styles.itemsbox}>
                 {chatPersonasComplete.length === 0 ? (
                   <Text style={styles.emptytext}>No interviews completed yet</Text>
                 ) : (
-                  chatPersonasComplete.map(({ persona }) => (
+                  chatPersonasComplete.map(({persona}) => (
                     <Text key={persona.id} style={styles.itemrow}>
                       {persona.name}
                     </Text>
@@ -251,15 +276,13 @@ export default function StudentSummaryScreen() {
 
               {chatPersonasPartial.some((entry) => entry.pressedCount > 0) && (
                 <>
-                  <Text style={[styles.cardheader, { marginTop: 16 }]}>
-                    Interviews In Progress
-                  </Text>
+                  <Text style={[styles.cardheader, {marginTop: 16}]}>Interviews In Progress</Text>
                   <View style={styles.itemsbox}>
                     {chatPersonasPartial
                       .filter((entry) => entry.pressedCount > 0)
-                      .map(({ persona, pressedCount, required }) => (
+                      .map(({persona, pressedCount, required}) => (
                         <Text key={persona.id} style={styles.itemrow}>
-                          {persona.name}  {pressedCount} / {required} questions
+                          {persona.name} {pressedCount} / {required} questions
                         </Text>
                       ))}
                   </View>
@@ -268,7 +291,7 @@ export default function StudentSummaryScreen() {
 
               {!!student.whiteboardNotes && (
                 <>
-                  <Text style={[styles.cardheader, { marginTop: 16 }]}>Whiteboard Notes</Text>
+                  <Text style={[styles.cardheader, {marginTop: 16}]}>Whiteboard Notes</Text>
                   <View style={styles.itemsbox}>
                     <Text style={styles.emptytext}>{student.whiteboardNotes}</Text>
                   </View>
@@ -276,12 +299,14 @@ export default function StudentSummaryScreen() {
               )}
             </View>
 
-            <View style={[styles.summarycard, { flex: 2 }]}>
+            <View style={[styles.summarycard, {flex: 2}]}>
               <Text style={styles.cardheader}>Reflections Summary</Text>
-              <View style={[styles.itemsbox, { padding: 14 }]}>
-                {reflectionQA.map(({ question, answer }, qIdx) => (
-                  <View key={qIdx} style={{ marginBottom: 10 }}>
-                    <Text style={styles.reflectionprompt}>Q{qIdx + 1}: {question}</Text>
+              <View style={[styles.itemsbox, {padding: 14}]}>
+                {reflectionQA.map(({question, answer}, qIdx) => (
+                  <View key={qIdx} style={{marginBottom: 10}}>
+                    <Text style={styles.reflectionprompt}>
+                      Q{qIdx + 1}: {question}
+                    </Text>
                     <Text style={styles.reflectioncontent}>{answer || 'No answer provided'}</Text>
                   </View>
                 ))}
@@ -298,14 +323,14 @@ export default function StudentSummaryScreen() {
                   <Pressable
                     key={val}
                     onPress={() => handleRate(val)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.loopiecircle,
-                      pressed && { transform: [{ scale: 0.92 }] },
+                      pressed && {transform: [{scale: 0.92}]},
                     ]}
                   >
                     <Image
                       source={require('../../assets/mascot.png')}
-                      style={[styles.loopieimage, { opacity: filled ? 1 : 0.25 }]}
+                      style={[styles.loopieimage, {opacity: filled ? 1 : 0.25}]}
                       resizeMode="contain"
                     />
                   </Pressable>
@@ -318,14 +343,14 @@ export default function StudentSummaryScreen() {
           </View>
 
           {submitting ? (
-            <ActivityIndicator color={c.navy} size="large" style={{ marginTop: 16 }} />
+            <ActivityIndicator color={c.navy} size="large" style={{marginTop: 16}} />
           ) : (
             <Btn
-              label={student.submitted ? "SESSION ENDED ✓" : "END SESSION"}
+              label={student.submitted ? 'SESSION ENDED ✓' : 'END SESSION'}
               onPress={handleEndSession}
               color={c.yellow}
               textColor={c.navy}
-              style={{ marginTop: 16 }}
+              style={{marginTop: 16}}
               disabled={student.submitted}
               icon={student.submitted ? 'complete' : 'checklist'}
             />
@@ -336,14 +361,16 @@ export default function StudentSummaryScreen() {
             onPress={handleDownloadSummary}
             color={c.purple}
             textColor={c.white}
-            style={{ marginTop: 12 }}
+            style={{marginTop: 12}}
             icon="checklist"
           />
 
           {student.submitted && (
             <View style={styles.submittedalert}>
               <PsIcon name="complete" size={20} />
-              <Text style={styles.submittedalerttext}>Session Completed! Thank you for participating!</Text>
+              <Text style={styles.submittedalerttext}>
+                Session Completed! Thank you for participating!
+              </Text>
             </View>
           )}
         </Wide>
@@ -442,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
@@ -465,7 +492,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F8F5',
     padding: 14,
     borderRadius: 12,
-  },  submittedalerttext: {
+  },
+  submittedalerttext: {
     fontFamily: 'DMSans_700Bold',
     color: c.green,
     fontSize: 15,

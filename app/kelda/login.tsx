@@ -1,10 +1,9 @@
-
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Pressable, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Mascot } from '../../components/parts';
-import { teachpass, c } from '../../lib/helpers';
-import { keldaState } from '../../lib/keldaState';
+import React, {useState, useCallback, useEffect} from 'react';
+import {View, Text, StyleSheet, SafeAreaView, Pressable, Alert} from 'react-native';
+import {useRouter} from 'expo-router';
+import {Mascot} from '../../components/parts';
+import {teachpass, c} from '../../lib/helpers';
+import {keldaState} from '../../lib/keldaState';
 
 export default function TeacherLockScreen() {
   const [code, setCode] = useState('');
@@ -15,9 +14,7 @@ export default function TeacherLockScreen() {
     if (keldaState.get().isUnlocked) {
       const last = keldaState.getLastRoute();
       const dest =
-        last && last !== '/kelda/login' && last.startsWith('/kelda/')
-          ? last
-          : '/kelda/dashboard';
+        last && last !== '/kelda/login' && last.startsWith('/kelda/') ? last : '/kelda/dashboard';
       router.replace(dest as any);
     }
   }, [router]);
@@ -33,7 +30,7 @@ export default function TeacherLockScreen() {
       setCode(next);
       if (next.length >= 4) {
         if (next === teachpass) {
-          keldaState.set({ isUnlocked: true });
+          keldaState.set({isUnlocked: true});
           setTimeout(() => {
             const last = keldaState.getLastRoute();
             const dest =
@@ -50,7 +47,7 @@ export default function TeacherLockScreen() {
         }
       }
     },
-    [code, router]
+    [code, router],
   );
 
   const keys = [
@@ -85,10 +82,10 @@ export default function TeacherLockScreen() {
                   <Pressable
                     key={k}
                     onPress={() => press(k)}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.key,
-                      { backgroundColor: buttonBg },
-                      pressed && { opacity: 0.8 },
+                      {backgroundColor: buttonBg},
+                      pressed && {opacity: 0.8},
                     ]}
                   >
                     <Text style={styles.keytext}>{k}</Text>
@@ -161,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,

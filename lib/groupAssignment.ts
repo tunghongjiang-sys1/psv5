@@ -1,8 +1,8 @@
-export type GroupStudent = { id: string; name: string; };
+export type GroupStudent = {id: string; name: string};
 
-export type Group = { memberIds: string[]; memberNames: string[]; };
+export type Group = {memberIds: string[]; memberNames: string[]};
 
-export type GroupAssignmentOptions = { minSize?: number; maxSize?: number; };
+export type GroupAssignmentOptions = {minSize?: number; maxSize?: number};
 
 function djb2Hash(input: string): number {
   let h = 5381;
@@ -62,16 +62,13 @@ function computeBalancedSplit(total: number, minSize: number, maxSize: number): 
   return bestSplit ?? [total];
 }
 
-function computeMutuals(
-  ids: string[],
-  preferMap: Record<string, string[]>,
-): Map<string, string[]> {
+function computeMutuals(ids: string[], preferMap: Record<string, string[]>): Map<string, string[]> {
   const mutuals = new Map<string, string[]>();
   for (const id of ids) mutuals.set(id, []);
 
   const peerSet = new Set(ids);
   for (const id of ids) {
-    const myPicks = (preferMap[id] || []).filter(p => peerSet.has(p) && p !== id);
+    const myPicks = (preferMap[id] || []).filter((p) => peerSet.has(p) && p !== id);
     const mutualList: string[] = [];
     for (const peer of myPicks) {
       const peerPicks = preferMap[peer] || [];
@@ -86,7 +83,7 @@ export function computeGroupAssignments(
   students: GroupStudent[],
   preferMap: Record<string, string[]>,
   sessionId: string,
-  opts: GroupAssignmentOptions | number = { minSize: 3, maxSize: 5 },
+  opts: GroupAssignmentOptions | number = {minSize: 3, maxSize: 5},
 ): Group[] {
   let minSize = 3;
   let maxSize = 5;
@@ -99,24 +96,27 @@ export function computeGroupAssignments(
 
   if (!students || students.length === 0) return [];
 
-  const ids = students.map(s => s.id).slice().sort();
+  const ids = students
+    .map((s) => s.id)
+    .slice()
+    .sort();
   const nameMap = new Map<string, string>();
   for (const s of students) nameMap.set(s.id, s.name);
 
-  const N = ids.length;
-  if (N === 1) {
+  const n = ids.length;
+  if (n === 1) {
     const id = ids[0]!;
-    return [{ memberIds: [id], memberNames: [nameMap.get(id) || id] }];
+    return [{memberIds: [id], memberNames: [nameMap.get(id) || id]}];
   }
 
   const rng = makeRng(djb2Hash(sessionId));
 
-  const targetSizes = computeBalancedSplit(N, minSize, maxSize);
+  const targetSizes = computeBalancedSplit(n, minSize, maxSize);
   const numGroups = targetSizes.length;
 
   const mutuals = computeMutuals(ids, preferMap);
 
-  const groups: string[][] = Array.from({ length: numGroups }, () => []);
+  const groups: string[][] = Array.from({length: numGroups}, () => []);
   const groupCapacity: number[] = [...targetSizes];
 
   const studentOrder = shuffle(ids, rng);
@@ -135,7 +135,7 @@ export function computeGroupAssignments(
     }
 
     if (chosen < 0) {
-      const picks = (preferMap[student] || []).filter(p => ids.includes(p) && p !== student);
+      const picks = (preferMap[student] || []).filter((p) => ids.includes(p) && p !== student);
       let bestCount = -1;
       for (let g = 0; g < numGroups; g++) {
         if (groupCapacity[g]! === 0) continue;
@@ -170,10 +170,10 @@ export function computeGroupAssignments(
   }
 
   return groups
-    .filter(g => g.length > 0)
-    .map(memberIds => ({
+    .filter((g) => g.length > 0)
+    .map((memberIds) => ({
       memberIds,
-      memberNames: memberIds.map(id => nameMap.get(id) || id),
+      memberNames: memberIds.map((id) => nameMap.get(id) || id),
     }));
 }
 

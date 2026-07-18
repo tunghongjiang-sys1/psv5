@@ -1,15 +1,24 @@
-
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert, Pressable, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { usefb, fw, c, normalizeReflectionQuestions, getReflectionAnswers } from '../../lib/helpers';
-import { useStudentState } from '../../lib/students';
-import { Wide, Btn } from '../../components/parts';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  SafeAreaView,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {usefb, fw, c, normalizeReflectionQuestions, getReflectionAnswers} from '../../lib/helpers';
+import {useStudentState} from '../../lib/students';
+import {Wide, Btn} from '../../components/parts';
 
 export default function StudentReflectionsScreen() {
   const router = useRouter();
-  const { studentId, sessionId, studentName } = useStudentState();
+  const {studentId, sessionId, studentName} = useStudentState();
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showForm, setShowForm] = useState(false);
@@ -29,7 +38,9 @@ export default function StudentReflectionsScreen() {
   const studentsData = usefb(sessionId ? `sessions/${sessionId}/students` : null);
 
   const students = studentsData ? Object.values(studentsData) : [];
-  const reflections = students.filter((s: any) => s.reflection || (s.reflections && Object.keys(s.reflections).length > 0));
+  const reflections = students.filter(
+    (s: any) => s.reflection || (s.reflections && Object.keys(s.reflections).length > 0),
+  );
 
   useEffect(() => {
     if (studentsData && studentId) {
@@ -54,7 +65,7 @@ export default function StudentReflectionsScreen() {
   }, [studentsData, studentId, questions.length]);
 
   const handleTextChange = (text: string) => {
-    setAnswers((prev) => ({ ...prev, [currentSlide]: text }));
+    setAnswers((prev) => ({...prev, [currentSlide]: text}));
   };
 
   const submitReflection = async () => {
@@ -69,7 +80,7 @@ export default function StudentReflectionsScreen() {
         update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
           reflection: mainRef,
           reflections: answers,
-        })
+        }),
       );
       setSubmitted(true);
       setShowForm(false);
@@ -83,22 +94,17 @@ export default function StudentReflectionsScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={{padding: 24}}>
         <Wide>
           <View style={styles.headerrow}>
-            <Text style={styles.title}>
-              Student Reflections
-            </Text>
+            <Text style={styles.title}>Student Reflections</Text>
             {!showForm && (
               <Pressable
                 onPress={() => {
                   setShowForm(true);
                   setCurrentSlide(0);
                 }}
-                style={({ pressed }) => [
-                  styles.addbutton,
-                  pressed && { opacity: 0.85 },
-                ]}
+                style={({pressed}) => [styles.addbutton, pressed && {opacity: 0.85}]}
               >
                 <Text style={styles.addbuttontext}>{submitted ? 'Edit' : '+ Answer'}</Text>
               </Pressable>
@@ -108,7 +114,9 @@ export default function StudentReflectionsScreen() {
           {showForm && (
             <View style={styles.formcontainer}>
               <View style={styles.slideheader}>
-                <Text style={styles.slidenumber}>Question {currentSlide + 1} of {questions.length}</Text>
+                <Text style={styles.slidenumber}>
+                  Question {currentSlide + 1} of {questions.length}
+                </Text>
                 <View style={styles.dotsrow}>
                   {questions.map((_, idx) => (
                     <Pressable
@@ -142,29 +150,26 @@ export default function StudentReflectionsScreen() {
 
                 {currentSlide < questions.length - 1 ? (
                   <Pressable
-                    onPress={() => setCurrentSlide((prev) => Math.min(questions.length - 1, prev + 1))}
+                    onPress={() =>
+                      setCurrentSlide((prev) => Math.min(questions.length - 1, prev + 1))
+                    }
                     style={[styles.navbtn, styles.nextbtn]}
                   >
                     <Text style={[styles.navbtntext, styles.nextbtntext]}>Next Question →</Text>
                   </Pressable>
+                ) : saving ? (
+                  <ActivityIndicator color={c.navy} />
                 ) : (
-                  saving ? (
-                    <ActivityIndicator color={c.navy} />
-                  ) : (
-                    <Btn
-                      label="Save All Answers ✓"
-                      onPress={submitReflection}
-                      color={c.yellow}
-                      textColor={c.navy}
-                    />
-                  )
+                  <Btn
+                    label="Save All Answers ✓"
+                    onPress={submitReflection}
+                    color={c.yellow}
+                    textColor={c.navy}
+                  />
                 )}
               </View>
 
-              <Pressable
-                onPress={() => setShowForm(false)}
-                style={styles.cancelbutton}
-              >
+              <Pressable onPress={() => setShowForm(false)} style={styles.cancelbutton}>
                 <Text style={styles.canceltext}>Close Form</Text>
               </Pressable>
             </View>
@@ -177,20 +182,17 @@ export default function StudentReflectionsScreen() {
             return (
               <View
                 key={r.id}
-                style={[
-                  styles.reflectioncard,
-                  { backgroundColor: isSelf ? c.teal : '#EEF2F6' },
-                ]}
+                style={[styles.reflectioncard, {backgroundColor: isSelf ? c.teal : '#EEF2F6'}]}
               >
-                <Text style={[styles.cardname, { color: isSelf ? c.white : c.navy }]}>
+                <Text style={[styles.cardname, {color: isSelf ? c.white : c.navy}]}>
                   {isSelf ? 'Your Reflections' : `${r.name}`}:
                 </Text>
-                {rAnswers.map(({ question, answer }, qIdx) => (
+                {rAnswers.map(({question, answer}, qIdx) => (
                   <View key={qIdx} style={styles.qablock}>
-                    <Text style={[styles.cardprompt, { color: isSelf ? '#E0F7F5' : c.purpleMid }]}>
+                    <Text style={[styles.cardprompt, {color: isSelf ? '#E0F7F5' : c.purpleMid}]}>
                       Q{qIdx + 1}: {question}
                     </Text>
-                    <Text style={[styles.cardtext, { color: isSelf ? c.white : c.black }]}>
+                    <Text style={[styles.cardtext, {color: isSelf ? c.white : c.black}]}>
                       {answer || '(No answer provided)'}
                     </Text>
                   </View>
@@ -204,7 +206,7 @@ export default function StudentReflectionsScreen() {
             onPress={() => router.push('/student/whiteboard')}
             color={c.purple}
             textColor={c.white}
-            style={{ marginTop: 24 }}
+            style={{marginTop: 24}}
           />
         </Wide>
       </ScrollView>

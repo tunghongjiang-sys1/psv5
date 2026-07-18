@@ -1,17 +1,26 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { usefb, fw, c } from '../../lib/helpers';
-import { useStudentState } from '../../lib/students';
-import { Wide, Btn, PsIcon } from '../../components/parts';
-import { computeGroupAssignments } from '../../lib/groupAssignment';
+import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  SafeAreaView,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {usefb, fw, c} from '../../lib/helpers';
+import {useStudentState} from '../../lib/students';
+import {Wide, Btn, PsIcon} from '../../components/parts';
+import {computeGroupAssignments} from '../../lib/groupAssignment';
 
 type Phase = 'picking' | 'waiting' | 'assigned';
 
 export default function StudentGroupingsScreen() {
   const router = useRouter();
-  const { studentId, sessionId } = useStudentState();
+  const {studentId, sessionId} = useStudentState();
 
   const [selected, setSelected] = useState<string[]>([]);
   const [phase, setPhase] = useState<Phase>('picking');
@@ -19,15 +28,12 @@ export default function StudentGroupingsScreen() {
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const navigatedRef = useRef(false);
 
-  
   useEffect(() => {
     if (!studentId || !sessionId) {
       router.replace('/student/name');
     }
   }, [studentId, sessionId, router]);
 
-  
-  
   useEffect(() => {
     if (phase === 'assigned' && confirmedAt && !navigatedRef.current) {
       navigatedRef.current = true;
@@ -35,16 +41,12 @@ export default function StudentGroupingsScreen() {
     }
   }, [phase, confirmedAt, router]);
 
-  
   const studentsData = usefb(sessionId ? `sessions/${sessionId}/students` : null);
   const forceAssignGroupings = usefb(
     sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null,
   );
-  const finalizedGroups = usefb(
-    sessionId ? `sessions/${sessionId}/groupAssignments` : null,
-  );
+  const finalizedGroups = usefb(sessionId ? `sessions/${sessionId}/groupAssignments` : null);
 
-  
   const allStudents = useMemo(() => {
     if (!studentsData) return [];
     return Object.values(studentsData ?? {}).map((s: any) => ({
@@ -58,25 +60,24 @@ export default function StudentGroupingsScreen() {
     [allStudents, studentId],
   );
 
-  
-  
   const allSubmitted = useMemo(() => {
     if (!studentsData) return false;
-    const records = Object.values(studentsData ?? {}).filter(
-      (s: any) => s != null,
-    );
+    const records = Object.values(studentsData ?? {}).filter((s: any) => s != null);
     if (records.length === 0) return false;
     return records.every((s: any) => s.groupingsSubmitted === true);
   }, [studentsData]);
 
-  const triggerReady =
-    !!studentsData && (allSubmitted || forceAssignGroupings === true);
+  const triggerReady = !!studentsData && (allSubmitted || forceAssignGroupings === true);
 
-  
-  const myGroupInfo = useMemo<{ memberIds: string[]; memberNames: string[]; groupNumber: number; totalGroups: number; isFinalized: boolean } | null>(() => {
+  const myGroupInfo = useMemo<{
+    memberIds: string[];
+    memberNames: string[];
+    groupNumber: number;
+    totalGroups: number;
+    isFinalized: boolean;
+  } | null>(() => {
     if (!studentId) return null;
 
-    // Prefer teacher-finalized assignments.
     if (finalizedGroups && Array.isArray(finalizedGroups) && finalizedGroups.length > 0) {
       for (let i = 0; i < finalizedGroups.length; i++) {
         const g: any = finalizedGroups[i];
@@ -104,12 +105,10 @@ export default function StudentGroupingsScreen() {
       preferMap[id] = picks.filter((p: string) => ids.includes(p) && p !== id);
     }
 
-    const groups = computeGroupAssignments(
-      allStudents,
-      preferMap,
-      sessionId!,
-      { minSize: 3, maxSize: 5 },
-    );
+    const groups = computeGroupAssignments(allStudents, preferMap, sessionId!, {
+      minSize: 3,
+      maxSize: 5,
+    });
     const idx = groups.findIndex((g) => g.memberIds.includes(studentId));
     if (idx < 0) return null;
     return {
@@ -121,10 +120,6 @@ export default function StudentGroupingsScreen() {
     };
   }, [finalizedGroups, studentsData, studentId, triggerReady, allStudents, sessionId]);
 
-  
-  
-  
-  
   const soloReady =
     !!triggerReady &&
     !!studentsData &&
@@ -142,7 +137,6 @@ export default function StudentGroupingsScreen() {
   const studentStranded =
     Array.isArray(finalizedGroups) && finalizedGroups.length > 0 && !studentInFinalized;
 
-  
   const submittedCount = useMemo(() => {
     if (!studentsData) return 0;
     return Object.values(studentsData ?? {}).filter(
@@ -151,10 +145,6 @@ export default function StudentGroupingsScreen() {
   }, [studentsData]);
   const totalCount = allStudents.length;
 
-  
-  
-  
-  
   useEffect(() => {
     if (phase === 'assigned') return;
     if (phase === 'waiting') {
@@ -166,7 +156,6 @@ export default function StudentGroupingsScreen() {
     }
   }, [phase, triggerReady, myGroupInfo, soloReady]);
 
-  
   const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       if (prev.includes(id)) {
@@ -180,7 +169,6 @@ export default function StudentGroupingsScreen() {
     });
   }, []);
 
-  
   const handleGo = async () => {
     if (saving) return;
     setSaving(true);
@@ -199,7 +187,6 @@ export default function StudentGroupingsScreen() {
     }
   };
 
-  
   const handleConfirm = async () => {
     try {
       await fw(
@@ -215,22 +202,16 @@ export default function StudentGroupingsScreen() {
     }
   };
 
-  
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollcontent}
-      >
-        <Wide style={{ alignItems: 'center' }}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
+        <Wide style={{alignItems: 'center'}}>
           {phase === 'picking' && (
             <>
               <Text style={styles.heading}>
                 Choose the students whom you would like to be in a group with!
               </Text>
-              <Text style={styles.subtitle}>
-                Selected: {selected.length} / 5 members
-              </Text>
+              <Text style={styles.subtitle}>Selected: {selected.length} / 5 members</Text>
 
               <View style={styles.studentgrid}>
                 {peers.map((s) => {
@@ -242,20 +223,16 @@ export default function StudentGroupingsScreen() {
                     <Pressable
                       key={s.id}
                       onPress={() => toggle(s.id)}
-                      style={[styles.studentcard, { backgroundColor: bgColor }]}
+                      style={[styles.studentcard, {backgroundColor: bgColor}]}
                       disabled={atLimit}
                     >
-                      <Text style={[styles.studentname, { color: textColor }]}>
-                        {s.name}
-                      </Text>
+                      <Text style={[styles.studentname, {color: textColor}]}>{s.name}</Text>
                     </Pressable>
                   );
                 })}
 
                 {peers.length === 0 && (
-                  <Text style={styles.waitingtext}>
-                    Waiting for others to join...
-                  </Text>
+                  <Text style={styles.waitingtext}>Waiting for others to join...</Text>
                 )}
               </View>
 
@@ -271,7 +248,8 @@ export default function StudentGroupingsScreen() {
             <View style={styles.waitingcontainer}>
               <Text style={styles.strandedtitle}>Not yet in any group</Text>
               <Text style={styles.strandedsub}>
-                Your teacher has saved the groupings but didn't include you yet. Please ask them to add you, then refresh.
+                Your teacher has saved the groupings but didn't include you yet. Please ask them to
+                add you, then refresh.
               </Text>
             </View>
           )}
@@ -279,16 +257,12 @@ export default function StudentGroupingsScreen() {
           {phase === 'waiting' && !studentStranded && (
             <View style={styles.waitingcontainer}>
               <ActivityIndicator color={c.teal} size="large" />
-              <Text style={styles.waitingsubtitle}>
-                Waiting for everyone to choose groups…
-              </Text>
+              <Text style={styles.waitingsubtitle}>Waiting for everyone to choose groups…</Text>
               <Text style={styles.waitingcount}>
                 {submittedCount} / {totalCount} submitted
               </Text>
               {forceAssignGroupings === true && (
-                <Text style={styles.forcednote}>
-                  Your teacher has approved the groupings ✓
-                </Text>
+                <Text style={styles.forcednote}>Your teacher has approved the groupings ✓</Text>
               )}
             </View>
           )}
@@ -318,8 +292,7 @@ export default function StudentGroupingsScreen() {
               {myGroupInfo && !soloReady && (
                 <View style={styles.groupcard}>
                   {myGroupInfo.memberNames.map((nm, i) => {
-                    const isSelf =
-                      myGroupInfo.memberIds[i] === studentId;
+                    const isSelf = myGroupInfo.memberIds[i] === studentId;
                     return (
                       <View key={i} style={styles.memberrow}>
                         <View
@@ -358,7 +331,7 @@ export default function StudentGroupingsScreen() {
                 </View>
               )}
 
-              <View style={{ marginTop: 24, alignSelf: 'stretch' }}>
+              <View style={{marginTop: 24, alignSelf: 'stretch'}}>
                 <Btn
                   label="OK, Continue to Interview →"
                   onPress={handleConfirm}
@@ -472,7 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginBottom: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 3,

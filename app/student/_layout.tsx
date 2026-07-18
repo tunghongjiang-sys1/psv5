@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo } from 'react';
-import { Stack, usePathname, useRouter } from 'expo-router';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import { useStudentState, studentState } from '../../lib/students';
-import { usefb, c } from '../../lib/helpers';
-import { ProgressBar, PROGRESS_STEPS, PsIcon } from '../../components/parts';
+import React, {useEffect, useMemo} from 'react';
+import {Stack, usePathname, useRouter} from 'expo-router';
+import {View, Text, StyleSheet, Pressable, Alert} from 'react-native';
+import {useStudentState, studentState} from '../../lib/students';
+import {usefb, c} from '../../lib/helpers';
+import {ProgressBar, progressSteps, PsIcon} from '../../components/parts';
 
 const tabs = [
-  { key: 'interview', label: 'Interview', href: '/student/interview' },
-  { key: 'shopping', label: 'Plan Logistics', href: '/student/shopping' },
-  { key: 'reflections', label: 'Reflections', href: '/student/reflections' },
-  { key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard' },
-  { key: 'summary', label: 'Summary', href: '/student/submit' },
+  {key: 'interview', label: 'Interview', href: '/student/interview'},
+  {key: 'shopping', label: 'Plan Logistics', href: '/student/shopping'},
+  {key: 'reflections', label: 'Reflections', href: '/student/reflections'},
+  {key: 'whiteboard', label: 'Whiteboard', href: '/student/whiteboard'},
+  {key: 'summary', label: 'Summary', href: '/student/submit'},
 ];
 
 function stepIndexForPath(pathname: string): number {
@@ -26,7 +26,7 @@ function stepIndexForPath(pathname: string): number {
 export default function StudentLayout() {
   const pathname = usePathname();
   const router = useRouter();
-  const { studentId, sessionId } = useStudentState();
+  const {studentId, sessionId} = useStudentState();
 
   useEffect(() => {
     if (pathname && pathname.startsWith('/student/')) {
@@ -37,49 +37,44 @@ export default function StudentLayout() {
   const showTabBar = pathname !== '/student/name' && pathname !== '/student/groupings';
   const showProgressBar = pathname !== '/student/name';
 
-  
   const interviewUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/interview` : null);
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
-  const reflectionsUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/reflections` : null);
+  const reflectionsUnlocked = usefb(
+    sessionId ? `sessions/${sessionId}/unlocked/reflections` : null,
+  );
   const summaryUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/summary` : null);
-  const forceAssignGroupings = usefb(sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null);
+  const forceAssignGroupings = usefb(
+    sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null,
+  );
   const studentRecord = usefb(
     sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
   );
 
-  
-  const { unlocked, completed } = useMemo(() => {
-    const u = new Array(PROGRESS_STEPS.length).fill(false) as boolean[];
-    const c = new Array(PROGRESS_STEPS.length).fill(false) as boolean[];
+  const {unlocked, completed} = useMemo(() => {
+    const u = new Array(progressSteps.length).fill(false) as boolean[];
+    const c = new Array(progressSteps.length).fill(false) as boolean[];
 
-    
     u[0] = true;
-    
-    
+
     c[0] = studentRecord?.viewedAssignment === true || forceAssignGroupings === true;
 
-    
-    
-    
     u[1] =
       interviewUnlocked === true ||
       forceAssignGroupings === true ||
       studentRecord?.viewedAssignment === true;
 
-    
     u[2] = shoppingUnlocked === true;
     u[3] = reflectionsUnlocked === true;
     u[4] = reflectionsUnlocked === true || summaryUnlocked === true;
     u[5] = summaryUnlocked === true;
 
-    
     c[1] = studentRecord?.allInterviewsCompleted === true;
     c[2] = !!studentRecord?.bought || !!studentRecord?.borrowed;
     c[3] = !!studentRecord?.reflections && Object.keys(studentRecord.reflections).length > 0;
     c[4] = !!studentRecord?.whiteboardStrokes || !!studentRecord?.whiteboardNotes;
     c[5] = studentRecord?.submitted === true;
 
-    return { unlocked: u, completed: c };
+    return {unlocked: u, completed: c};
   }, [
     interviewUnlocked,
     shoppingUnlocked,
@@ -106,7 +101,7 @@ export default function StudentLayout() {
     }
   };
 
-  const handleTabPress = (tab: typeof tabs[number]) => {
+  const handleTabPress = (tab: (typeof tabs)[number]) => {
     const isUnlocked = getLockStatus(tab.key);
     if (!isUnlocked) {
       Alert.alert('Phase Locked', 'Your teacher has not unlocked this phase yet!');
@@ -120,15 +115,11 @@ export default function StudentLayout() {
   return (
     <View style={styles.root}>
       {showProgressBar && activeStepIndex >= 0 && (
-        <ProgressBar
-          activeIndex={activeStepIndex}
-          unlocked={unlocked}
-          completed={completed}
-        />
+        <ProgressBar activeIndex={activeStepIndex} unlocked={unlocked} completed={completed} />
       )}
 
       <View style={styles.content}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{headerShown: false}} />
       </View>
 
       {showTabBar && (
@@ -181,7 +172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     backgroundColor: '#FFFFFF',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: {width: 0, height: -2},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 3,

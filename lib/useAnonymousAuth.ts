@@ -1,6 +1,5 @@
-
-import { useEffect, useState } from 'react';
-import { auth, onAuthStateChanged, signInAnonymously, User } from './firebaseConfig';
+import {useEffect, useState} from 'react';
+import {auth, onAuthStateChanged, signInAnonymously, User} from './firebaseConfig';
 
 export function useAnonymousAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -12,7 +11,6 @@ export function useAnonymousAuth() {
         setUser(firebaseUser);
         setLoading(false);
       } else {
-
         signInAnonymously(auth)
           .then((cred) => {
             setUser(cred.user);
@@ -28,5 +26,5 @@ export function useAnonymousAuth() {
     return unsubscribe;
   }, []);
 
-  return { user, loading };
+  return {user, loading};
 }

@@ -1,22 +1,30 @@
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, useWindowDimensions, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, set, auth } from '../../lib/firebaseConfig';
-import { usefb, fw, c } from '../../lib/helpers';
-import { studentState } from '../../lib/students';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  Alert,
+  Image,
+  useWindowDimensions,
+  Pressable,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, set, auth} from '../../lib/firebaseConfig';
+import {usefb, fw, c} from '../../lib/helpers';
+import {studentState} from '../../lib/students';
 
 export default function StudentEntryScreen() {
   const [name, setName] = useState('');
   const [nameWarning, setNameWarning] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const {width} = useWindowDimensions();
 
   const activeSession = usefb('activeSession');
-  const studentsData = usefb(
-    activeSession?.id ? `sessions/${activeSession.id}/students` : null
-  );
+  const studentsData = usefb(activeSession?.id ? `sessions/${activeSession.id}/students` : null);
 
   if (activeSession === undefined) {
     return (
@@ -38,10 +46,8 @@ export default function StudentEntryScreen() {
           resizeMode="contain"
         />
         <Text style={styles.waitingtitle}>LOOPIE{'\n'}TOWN</Text>
-        <Text style={styles.waitingtext}>
-          Wait for a new session to begin!
-        </Text>
-        <ActivityIndicator color={c.navy} style={{ marginTop: 24 }} size="large" />
+        <Text style={styles.waitingtext}>Wait for a new session to begin!</Text>
+        <ActivityIndicator color={c.navy} style={{marginTop: 24}} size="large" />
       </SafeAreaView>
     );
   }
@@ -56,9 +62,7 @@ export default function StudentEntryScreen() {
     if (loading) return;
 
     const existing = studentsData ? Object.values(studentsData) : [];
-    const taken = existing.some(
-      (s: any) => s.name?.trim().toLowerCase() === trimmed.toLowerCase()
-    );
+    const taken = existing.some((s: any) => s.name?.trim().toLowerCase() === trimmed.toLowerCase());
     if (taken) {
       setNameWarning('This name has already been taken.');
       return;
@@ -82,7 +86,7 @@ export default function StudentEntryScreen() {
           whiteboard: '',
           rating: 0,
           submitted: false,
-        })
+        }),
       );
 
       studentState.set({
@@ -102,7 +106,6 @@ export default function StudentEntryScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-
       <View style={styles.navbar}>
         <Pressable onPress={() => router.replace('/')} style={styles.navbarback}>
           <Text style={styles.navbarbacktext}>← Back</Text>
@@ -111,7 +114,7 @@ export default function StudentEntryScreen() {
       </View>
 
       <View style={styles.container}>
-        <View style={[styles.contentrow, { flexDirection: isWide ? 'row' : 'column' }]}>
+        <View style={[styles.contentrow, {flexDirection: isWide ? 'row' : 'column'}]}>
           <View style={styles.formcard}>
             <Text style={styles.cardheading}>Type in your name to start!</Text>
             <TextInput
@@ -127,19 +130,14 @@ export default function StudentEntryScreen() {
               editable={!loading}
             />
             <View style={styles.warningrow}>
-              {!!nameWarning && (
-                <Text style={styles.warningtext}>{nameWarning}</Text>
-              )}
+              {!!nameWarning && <Text style={styles.warningtext}>{nameWarning}</Text>}
             </View>
             {loading ? (
-              <ActivityIndicator color={c.navy} size="large" style={{ alignSelf: 'flex-start' }} />
+              <ActivityIndicator color={c.navy} size="large" style={{alignSelf: 'flex-start'}} />
             ) : (
               <Pressable
                 onPress={handleGo}
-                style={({ pressed }) => [
-                  styles.gobutton,
-                  pressed && styles.gobuttonpressed,
-                ]}
+                style={({pressed}) => [styles.gobutton, pressed && styles.gobuttonpressed]}
               >
                 <Text style={styles.gobuttontext}>Go →</Text>
               </Pressable>
@@ -148,7 +146,7 @@ export default function StudentEntryScreen() {
           <View style={styles.mascotcontainer}>
             <Image
               source={require('../../assets/mascot.png')}
-              style={{ width: isWide ? 160 : 100, height: (isWide ? 160 : 100) * 1.25 }}
+              style={{width: isWide ? 160 : 100, height: (isWide ? 160 : 100) * 1.25}}
               resizeMode="contain"
             />
           </View>
@@ -286,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.18,
     shadowRadius: 6,
     elevation: 4,

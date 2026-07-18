@@ -1,20 +1,30 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Pressable, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { usefb, fw, c } from '../../lib/helpers';
-import { useStudentState } from '../../lib/students';
-import { Wide, Btn } from '../../components/parts';
+import React, {useState, useEffect, useRef} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {usefb, fw, c} from '../../lib/helpers';
+import {useStudentState} from '../../lib/students';
+import {Wide, Btn} from '../../components/parts';
 
 type Stroke = {
   color: string;
-  points: { x: number; y: number }[];
+  points: {x: number; y: number}[];
 };
 
 export default function StudentWhiteboardScreen() {
   const router = useRouter();
-  const { studentId, sessionId } = useStudentState();
+  const {studentId, sessionId} = useStudentState();
   const [notes, setNotes] = useState('');
   const [color, setColor] = useState(c.navy);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -31,7 +41,9 @@ export default function StudentWhiteboardScreen() {
     }
   }, [studentId, sessionId]);
 
-  const student = usefb(sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null);
+  const student = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
+  );
   const summaryUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/summary` : null);
 
   useEffect(() => {
@@ -40,7 +52,10 @@ export default function StudentWhiteboardScreen() {
       if (student.whiteboardNotes) setNotes(student.whiteboardNotes);
       if (student.whiteboardStrokes) {
         try {
-          const parsed = typeof student.whiteboardStrokes === 'string' ? JSON.parse(student.whiteboardStrokes) : student.whiteboardStrokes;
+          const parsed =
+            typeof student.whiteboardStrokes === 'string'
+              ? JSON.parse(student.whiteboardStrokes)
+              : student.whiteboardStrokes;
           setStrokes(parsed || []);
         } catch (e) {
           console.error(e);
@@ -79,7 +94,7 @@ export default function StudentWhiteboardScreen() {
         update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
           whiteboardNotes: notes,
           whiteboardStrokes: JSON.stringify(strokes),
-        })
+        }),
       );
       Alert.alert('Whiteboard Saved!', 'Your ideas have been recorded.');
     } catch (e: any) {
@@ -109,7 +124,7 @@ export default function StudentWhiteboardScreen() {
     const y = (clientY - rect.top) * scaleY;
 
     isDrawing.current = true;
-    setCurrentStroke({ color, points: [{ x, y }] });
+    setCurrentStroke({color, points: [{x, y}]});
   };
 
   const handleMouseMove = (e: any) => {
@@ -128,8 +143,8 @@ export default function StudentWhiteboardScreen() {
 
     setCurrentStroke((prev) => {
       if (!prev) return null;
-      const newPoints = [...prev.points, { x, y }];
-      return { ...prev, points: newPoints };
+      const newPoints = [...prev.points, {x, y}];
+      return {...prev, points: newPoints};
     });
   };
 
@@ -156,7 +171,7 @@ export default function StudentWhiteboardScreen() {
     }
     if (notes.trim()) {
       const element = document.createElement('a');
-      const file = new Blob([notes], { type: 'text/plain' });
+      const file = new Blob([notes], {type: 'text/plain'});
       element.href = URL.createObjectURL(file);
       element.download = 'whiteboard-notes.txt';
       document.body.appendChild(element);
@@ -173,11 +188,13 @@ export default function StudentWhiteboardScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={{padding: 20}}>
         <Wide>
           <View style={styles.header}>
             <Text style={styles.title}>Student Whiteboard</Text>
-            <Text style={styles.subtitle}>Express your team's ideas, notes, or sketch down your solution!</Text>
+            <Text style={styles.subtitle}>
+              Express your team's ideas, notes, or sketch down your solution!
+            </Text>
           </View>
 
           <View style={styles.toolbar}>
@@ -188,7 +205,7 @@ export default function StudentWhiteboardScreen() {
                 onPress={() => setColor(clr)}
                 style={[
                   styles.colorbox,
-                  { backgroundColor: clr },
+                  {backgroundColor: clr},
                   color === clr && styles.activecolor,
                 ]}
               />
@@ -197,7 +214,7 @@ export default function StudentWhiteboardScreen() {
               <Text style={styles.cleartext}>Clear Drawing</Text>
             </Pressable>
             {saving ? (
-              <ActivityIndicator color={c.navy} style={{ marginLeft: 'auto' }} />
+              <ActivityIndicator color={c.navy} style={{marginLeft: 'auto'}} />
             ) : (
               <Pressable onPress={saveWhiteboard} style={styles.savebtn}>
                 <Text style={styles.savetext}>Save Work</Text>
@@ -231,7 +248,9 @@ export default function StudentWhiteboardScreen() {
               />
             ) : (
               <View style={styles.mobilefallback}>
-                <Text style={styles.fallbacktext}>Interactive Canvas active on Web browser view.</Text>
+                <Text style={styles.fallbacktext}>
+                  Interactive Canvas active on Web browser view.
+                </Text>
               </View>
             )}
           </View>
@@ -254,13 +273,11 @@ export default function StudentWhiteboardScreen() {
               onPress={() => router.push('/student/submit')}
               color={c.purple}
               textColor={c.white}
-              style={{ marginTop: 24 }}
+              style={{marginTop: 24}}
             />
           ) : (
             <View style={styles.lockbox}>
-              <Text style={styles.locktext}>
-                Summary unlocks when teacher is ready
-              </Text>
+              <Text style={styles.locktext}>Summary unlocks when teacher is ready</Text>
             </View>
           )}
         </Wide>
@@ -312,7 +329,7 @@ const styles = StyleSheet.create({
   },
   activecolor: {
     borderColor: c.yellow,
-    transform: [{ scale: 1.15 }],
+    transform: [{scale: 1.15}],
   },
   clearbtn: {
     backgroundColor: '#E2E8F0',

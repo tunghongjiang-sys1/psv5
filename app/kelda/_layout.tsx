@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { Stack, usePathname } from 'expo-router';
-import { keldaState } from '../../lib/keldaState';
+import React, {useEffect} from 'react';
+import {Stack, usePathname} from 'expo-router';
+import {keldaState} from '../../lib/keldaState';
 
 export default function KeldaLayout() {
   const pathname = usePathname();
@@ -11,5 +11,5 @@ export default function KeldaLayout() {
     }
   }, [pathname]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return <Stack screenOptions={{headerShown: false}} />;
 }

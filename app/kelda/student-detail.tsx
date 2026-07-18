@@ -1,18 +1,28 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Pressable, Image, Platform } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { usefb, itemsbuy, itemsbor, defpers, c, parseWhiteboardStrokes } from '../../lib/helpers';
-import { Wide, PsIcon } from '../../components/parts';
-import { useKeldaState } from '../../lib/keldaState';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Image,
+  Platform,
+} from 'react-native';
+import {useRouter, useLocalSearchParams} from 'expo-router';
+import {usefb, itemsbuy, itemsbor, defpers, c, parseWhiteboardStrokes} from '../../lib/helpers';
+import {Wide, PsIcon} from '../../components/parts';
+import {useKeldaState} from '../../lib/keldaState';
 
 type ReadOnlyWhiteboardProps = {
   rawStrokes: any;
 };
 
-const WHITEBOARD_W = 700;
-const WHITEBOARD_H = 320;
+const whiteboardW = 700;
+const whiteboardH = 320;
 
-const ReadOnlyWhiteboard = ({ rawStrokes }: ReadOnlyWhiteboardProps) => {
+const ReadOnlyWhiteboard = ({rawStrokes}: ReadOnlyWhiteboardProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const strokes = useMemo(() => parseWhiteboardStrokes(rawStrokes), [rawStrokes]);
 
@@ -20,7 +30,7 @@ const ReadOnlyWhiteboard = ({ rawStrokes }: ReadOnlyWhiteboardProps) => {
     if (Platform.OS !== 'web' || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
-    ctx.clearRect(0, 0, WHITEBOARD_W, WHITEBOARD_H);
+    ctx.clearRect(0, 0, whiteboardW, whiteboardH);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.lineWidth = 3;
@@ -46,7 +56,7 @@ const ReadOnlyWhiteboard = ({ rawStrokes }: ReadOnlyWhiteboardProps) => {
 
   if (Platform.OS !== 'web') {
     return (
-      <View style={[styles.reflectionbox, { padding: 20 }]}>
+      <View style={[styles.reflectionbox, {padding: 20}]}>
         <Text style={styles.reflectioncontent}>
           {'Canvas preview is only available on the Web browser view.'}
         </Text>
@@ -55,15 +65,15 @@ const ReadOnlyWhiteboard = ({ rawStrokes }: ReadOnlyWhiteboardProps) => {
   }
 
   return (
-    <View style={[styles.reflectionbox, { padding: 0, overflow: 'hidden' }]}>
+    <View style={[styles.reflectionbox, {padding: 0, overflow: 'hidden'}]}>
       <canvas
         ref={canvasRef as any}
-        width={WHITEBOARD_W}
-        height={WHITEBOARD_H}
+        width={whiteboardW}
+        height={whiteboardH}
         style={{
           width: '100%',
           height: 'auto',
-          aspectRatio: WHITEBOARD_W / WHITEBOARD_H,
+          aspectRatio: whiteboardW / whiteboardH,
           backgroundColor: '#FFFFFF',
           display: 'block',
         }}
@@ -77,7 +87,7 @@ export type StudentProfilePanelProps = {
   studentsData: any;
 };
 
-export function StudentProfilePanel({ student, studentsData }: StudentProfilePanelProps) {
+export function StudentProfilePanel({student, studentsData}: StudentProfilePanelProps) {
   const [openChatPersona, setOpenChatPersona] = useState<string | null>(null);
 
   const students = studentsData ? Object.values(studentsData) : [];
@@ -92,7 +102,7 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
   const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
   const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
 
-  const getChatMessages = (pid: string): { role: string; content: string }[] => {
+  const getChatMessages = (pid: string): {role: string; content: string}[] => {
     const raw = student.chats?.[pid];
     if (!raw) return [];
     const parts = raw.split('|||');
@@ -108,10 +118,7 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
         <Text style={styles.profilename}>{student.name}</Text>
         <View style={styles.metarow}>
           <View
-            style={[
-              styles.statusbadge,
-              { backgroundColor: student.submitted ? c.green : c.grey },
-            ]}
+            style={[styles.statusbadge, {backgroundColor: student.submitted ? c.green : c.grey}]}
           >
             <Text style={styles.statusbadgetext}>
               {student.submitted ? 'Submitted' : 'In Progress'}
@@ -119,7 +126,11 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
           </View>
           {student.joinedAt && (
             <Text style={styles.joinedtime}>
-              Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              Joined:{' '}
+              {new Date(student.joinedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </Text>
           )}
         </View>
@@ -127,13 +138,11 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
 
       <View style={styles.sectioncard}>
         <Text style={styles.sectiontitle}>Preferred Group Members</Text>
-        <Text style={styles.sectioncontent}>
-          {preferredNames || 'No preferences selected'}
-        </Text>
+        <Text style={styles.sectioncontent}>{preferredNames || 'No preferences selected'}</Text>
       </View>
 
       <View style={styles.shoppingsection}>
-        <View style={[styles.sectioncard, { flex: 1 }]}>
+        <View style={[styles.sectioncard, {flex: 1}]}>
           <View style={styles.sectiontitlerow}>
             <PsIcon name="grocery" size={20} />
             <Text style={styles.sectiontitlerowtext}>Items Bought</Text>
@@ -149,7 +158,7 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
           )}
         </View>
 
-        <View style={[styles.sectioncard, { flex: 1 }]}>
+        <View style={[styles.sectioncard, {flex: 1}]}>
           <Text style={styles.sectiontitle}>Items Borrowed</Text>
           {borrowedItems.length === 0 ? (
             <Text style={styles.emptytext}>Nothing borrowed</Text>
@@ -165,7 +174,9 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
 
       <View style={styles.sectioncard}>
         <Text style={styles.sectiontitle}>Conversations with Seniors</Text>
-        <Text style={styles.chatsectiondesc}>Tapping on a senior below reveals their chat log.</Text>
+        <Text style={styles.chatsectiondesc}>
+          Tapping on a senior below reveals their chat log.
+        </Text>
         {defpers.map((p) => {
           const messages = getChatMessages(p.id);
           const isOpen = openChatPersona === p.id;
@@ -178,9 +189,7 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
                 style={styles.chatpersonaheader}
                 disabled={!hasChat}
               >
-                <Text style={styles.chatpersonaname}>
-                  {p.name}
-                </Text>
+                <Text style={styles.chatpersonaname}>{p.name}</Text>
                 {hasChat ? (
                   <Text style={styles.chattoggleindicator}>
                     {isOpen ? '▲ Hide Log' : '▼ View Log'} ({messages.length} msgs)
@@ -218,8 +227,10 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
         <View style={styles.reflectionbox}>
           {student.reflections ? (
             Object.entries(student.reflections).map(([idx, ans]: [string, any]) => (
-              <View key={idx} style={{ marginBottom: 8 }}>
-                <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 13, color: c.navy }}>Q{Number(idx) + 1}:</Text>
+              <View key={idx} style={{marginBottom: 8}}>
+                <Text style={{fontFamily: 'DMSans_700Bold', fontSize: 13, color: c.navy}}>
+                  Q{Number(idx) + 1}:
+                </Text>
                 <Text style={styles.reflectioncontent}>{String(ans || '(No answer)')}</Text>
               </View>
             ))
@@ -236,10 +247,8 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
           <Text style={styles.sectiontitle}>Whiteboard</Text>
           <ReadOnlyWhiteboard rawStrokes={student.whiteboardStrokes} />
           {!!student.whiteboardNotes && (
-            <View style={[styles.reflectionbox, { marginTop: 12 }]}>
-              <Text style={[styles.reflectionprompt, { marginBottom: 6 }]}>
-                Written notes:
-              </Text>
+            <View style={[styles.reflectionbox, {marginTop: 12}]}>
+              <Text style={[styles.reflectionprompt, {marginBottom: 6}]}>Written notes:</Text>
               <Text style={styles.reflectioncontent}>{student.whiteboardNotes}</Text>
             </View>
           )}
@@ -248,23 +257,23 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
 
       <View style={styles.sectioncard}>
         <Text style={styles.sectiontitle}>Student Rating</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4}}>
           {student.rating ? (
             <>
               {[1, 2, 3, 4, 5].map((val) => (
                 <Image
                   key={val}
                   source={require('../../assets/mascot.png')}
-                  style={{ width: 24, height: 24, opacity: val <= student.rating ? 1 : 0.25 }}
+                  style={{width: 24, height: 24, opacity: val <= student.rating ? 1 : 0.25}}
                   resizeMode="contain"
                 />
               ))}
-              <Text style={{ fontFamily: 'DMSans_700Bold', fontSize: 16, color: c.orange }}>
+              <Text style={{fontFamily: 'DMSans_700Bold', fontSize: 16, color: c.orange}}>
                 {student.rating} / 5 Loopies
               </Text>
             </>
           ) : (
-            <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: c.grey }}>
+            <Text style={{fontFamily: 'DMSans_400Regular', fontSize: 14, color: c.grey}}>
               No rating given yet
             </Text>
           )}
@@ -276,8 +285,8 @@ export function StudentProfilePanel({ student, studentsData }: StudentProfilePan
 
 export default function KeldaStudentDetailScreen() {
   const router = useRouter();
-  const { isUnlocked } = useKeldaState();
-  const { studentId } = useLocalSearchParams<{ studentId: string }>();
+  const {isUnlocked} = useKeldaState();
+  const {studentId} = useLocalSearchParams<{studentId: string}>();
 
   useEffect(() => {
     if (!isUnlocked) {
@@ -288,7 +297,7 @@ export default function KeldaStudentDetailScreen() {
   const activeSession = usefb('activeSession');
 
   const student = usefb(
-    activeSession?.id && studentId ? `sessions/${activeSession.id}/students/${studentId}` : null
+    activeSession?.id && studentId ? `sessions/${activeSession.id}/students/${studentId}` : null,
   );
   const studentsData = usefb(activeSession?.id ? `sessions/${activeSession.id}/students` : null);
 
@@ -325,7 +334,7 @@ export default function KeldaStudentDetailScreen() {
         <Text style={styles.navbartitle}>{student.name}'s Profile</Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
         <Wide>
           <StudentProfilePanel student={student} studentsData={studentsData} />
         </Wide>

@@ -1,12 +1,28 @@
-
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { db, ref, update } from '../../lib/firebaseConfig';
-import { c, fw, usefb } from '../../lib/helpers';
-import { getInterviewQuickQuestions, getInterviewStarterMessage, interviewPersonas, makeInterviewReply, type InterviewPersona } from '../../components/interviewChatConfig';
-import { useStudentState } from '../../lib/students';
-import { Btn, Wide } from '../../components/parts';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import {useRouter} from 'expo-router';
+import {db, ref, update} from '../../lib/firebaseConfig';
+import {c, fw, usefb} from '../../lib/helpers';
+import {
+  getInterviewQuickQuestions,
+  getInterviewStarterMessage,
+  interviewPersonas,
+  makeInterviewReply,
+  type InterviewPersona,
+} from '../../components/interviewChatConfig';
+import {useStudentState} from '../../lib/students';
+import {Btn, Wide} from '../../components/parts';
 
 type Persona = InterviewPersona;
 type MessageRole = 'assistant' | 'user';
@@ -40,10 +56,7 @@ const parseTranscript = (raw: string | null | undefined, persona: Persona): Chat
   return messages.length > 0 ? messages : getStarter(persona);
 };
 
-const getUniquePressedQuestions = (
-  messages: ChatMessage[],
-  persona: Persona
-): string[] => {
+const getUniquePressedQuestions = (messages: ChatMessage[], persona: Persona): string[] => {
   const allowed = new Set(persona.quickQuestions);
   const out: string[] = [];
   const seen = new Set<string>();
@@ -57,17 +70,14 @@ const getUniquePressedQuestions = (
   return out;
 };
 
-const computePersonaStatus = (
-  messages: ChatMessage[],
-  persona: Persona
-): InterviewStatus => {
+const computePersonaStatus = (messages: ChatMessage[], persona: Persona): InterviewStatus => {
   const pressed = getUniquePressedQuestions(messages, persona);
   if (pressed.length >= persona.quickQuestions.length) return 'completed';
   if (pressed.length > 0) return 'in_progress';
   return 'not_started';
 };
 
-export { parseTranscript, getUniquePressedQuestions, computePersonaStatus };
+export {parseTranscript, getUniquePressedQuestions, computePersonaStatus};
 
 const serializeTranscript = (messages: ChatMessage[]) =>
   messages.map((m) => cleanForTranscript(m.content)).join('|||');
@@ -82,22 +92,21 @@ const formatSavedClock = (timestamp: number) => {
 
 export default function StudentInterviewScreen() {
   const router = useRouter();
-  const { studentId, sessionId } = useStudentState();
-  const { width } = useWindowDimensions();
+  const {studentId, sessionId} = useStudentState();
+  const {width} = useWindowDimensions();
   const chatScrollRef = useRef<ScrollView | null>(null);
   const lastLoadedChatsJsonRef = useRef<string | null>(null);
   const inFlightRef = useRef<boolean>(false);
 
   const [activePersonaId, setActivePersonaId] = useState(interviewPersonas[0].id);
-  const [messagesByPersona, setMessagesByPersona] = useState<Record<string, ChatMessage[]>>(
-    () =>
-      interviewPersonas.reduce(
-        (acc, persona) => ({
-          ...acc,
-          [persona.id]: getStarter(persona),
-        }),
-        {}
-      )
+  const [messagesByPersona, setMessagesByPersona] = useState<Record<string, ChatMessage[]>>(() =>
+    interviewPersonas.reduce(
+      (acc, persona) => ({
+        ...acc,
+        [persona.id]: getStarter(persona),
+      }),
+      {},
+    ),
   );
   const [savingPersonaId, setSavingPersonaId] = useState<string | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
@@ -109,7 +118,9 @@ export default function StudentInterviewScreen() {
     }
   }, [studentId, sessionId, router]);
 
-  const student = usefb(sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null);
+  const student = usefb(
+    sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
+  );
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
 
   useEffect(() => {
@@ -123,23 +134,22 @@ export default function StudentInterviewScreen() {
           ...acc,
           [persona.id]: parseTranscript(student.chats?.[persona.id], persona),
         }),
-        {}
-      )
+        {},
+      ),
     );
   }, [student]);
 
   const activePersona = useMemo(
     () =>
-      interviewPersonas.find((persona) => persona.id === activePersonaId) ??
-      interviewPersonas[0],
-    [activePersonaId]
+      interviewPersonas.find((persona) => persona.id === activePersonaId) ?? interviewPersonas[0],
+    [activePersonaId],
   );
   const activeMessages = messagesByPersona[activePersona.id] ?? getStarter(activePersona);
   const isWide = width >= 760;
 
   useEffect(() => {
     requestAnimationFrame(() => {
-      chatScrollRef.current?.scrollToEnd({ animated: true });
+      chatScrollRef.current?.scrollToEnd({animated: true});
     });
   }, [activePersonaId, activeMessages.length]);
 
@@ -154,8 +164,8 @@ export default function StudentInterviewScreen() {
     const current = messagesByPersona[persona.id] ?? getStarter(persona);
     const nextMessages: ChatMessage[] = [
       ...current,
-      { role: 'user', content: text },
-      { role: 'assistant', content: makeInterviewReply(persona, text, current.length) },
+      {role: 'user', content: text},
+      {role: 'assistant', content: makeInterviewReply(persona, text, current.length)},
     ];
 
     const nextAll: Record<string, ChatMessage[]> = {
@@ -182,7 +192,7 @@ export default function StudentInterviewScreen() {
       }
     }
     const allDone = interviewPersonas.every(
-      (p) => (updatedStatuses[p.id] ?? 'not_started') === 'completed'
+      (p) => (updatedStatuses[p.id] ?? 'not_started') === 'completed',
     );
 
     try {
@@ -192,13 +202,12 @@ export default function StudentInterviewScreen() {
           [`interviewStatuses/${persona.id}`]: personaStatus,
           allInterviewsCompleted: allDone,
           interviewUpdatedAt: now,
-        })
+        }),
       );
       setLastSavedAt(now);
       setSaveError(null);
     } catch (e: any) {
-
-      setMessagesByPersona((prev) => ({ ...prev, [persona.id]: current }));
+      setMessagesByPersona((prev) => ({...prev, [persona.id]: current}));
       setSaveError(e?.message || 'Could not save chat.');
     } finally {
       setSavingPersonaId(null);
@@ -208,7 +217,7 @@ export default function StudentInterviewScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollcontent}>
+      <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
         <Wide>
           <View style={[styles.layout, isWide && styles.layoutwide]}>
             <View style={[styles.peoplepane, isWide && styles.peoplepanewide]}>
@@ -225,10 +234,10 @@ export default function StudentInterviewScreen() {
                     <Pressable
                       key={persona.id}
                       onPress={() => setActivePersonaId(persona.id)}
-                      style={({ pressed: pressedState }) => [
+                      style={({pressed: pressedState}) => [
                         styles.personacard,
                         selected && styles.personacardactive,
-                        pressedState && { opacity: 0.86 },
+                        pressedState && {opacity: 0.86},
                       ]}
                     >
                       <Image
@@ -238,19 +247,13 @@ export default function StudentInterviewScreen() {
                       />
                       <View style={styles.personatextblock}>
                         <Text
-                          style={[
-                            styles.personaname,
-                            selected && styles.personanameactive,
-                          ]}
+                          style={[styles.personaname, selected && styles.personanameactive]}
                           numberOfLines={1}
                         >
                           {persona.name}
                         </Text>
                         <Text
-                          style={[
-                            styles.personameta,
-                            selected && styles.personametaactive,
-                          ]}
+                          style={[styles.personameta, selected && styles.personametaactive]}
                           numberOfLines={1}
                         >
                           Age {persona.age} · {progressLabel}
@@ -282,23 +285,17 @@ export default function StudentInterviewScreen() {
                   resizeMode="cover"
                 />
                 <View style={styles.chatheadertext}>
-                  <Text style={styles.chatname}>
-                    {activePersona.name}
-                  </Text>
+                  <Text style={styles.chatname}>{activePersona.name}</Text>
                   <Text style={styles.chatmeta}>Age {activePersona.age}</Text>
                 </View>
-                {savingPersonaId === activePersona.id && (
-                  <ActivityIndicator color={c.teal} />
-                )}
+                {savingPersonaId === activePersona.id && <ActivityIndicator color={c.teal} />}
               </View>
 
               <View style={styles.savestatusbar}>
                 {savingPersonaId === activePersona.id ? (
                   <Text style={styles.savestatuspending}>Saving…</Text>
                 ) : saveError ? (
-                  <Text style={styles.savestatuserror}>
-                    ⚠ Not saved: {saveError}
-                  </Text>
+                  <Text style={styles.savestatuserror}>⚠ Not saved: {saveError}</Text>
                 ) : lastSavedAt ? (
                   <Text style={styles.savestatusok}>
                     ✓ Auto-saved at {formatSavedClock(lastSavedAt)}
@@ -325,12 +322,7 @@ export default function StudentInterviewScreen() {
                         isUser ? styles.userbubble : styles.assistantbubble,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.messagetext,
-                          isUser && styles.usermessagetext,
-                        ]}
-                      >
+                      <Text style={[styles.messagetext, isUser && styles.usermessagetext]}>
                         {message.content}
                       </Text>
                     </View>
@@ -344,9 +336,9 @@ export default function StudentInterviewScreen() {
                     key={question}
                     onPress={() => handleSend(question)}
                     disabled={!!savingPersonaId}
-                    style={({ pressed }) => [
+                    style={({pressed}) => [
                       styles.quickchip,
-                      pressed && { opacity: 0.82 },
+                      pressed && {opacity: 0.82},
                       !!savingPersonaId && styles.disabledchip,
                     ]}
                   >
