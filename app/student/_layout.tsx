@@ -56,12 +56,14 @@ export default function StudentLayout() {
 
     u[0] = true;
 
-    c[0] = studentRecord?.viewedAssignment === true || forceAssignGroupings === true;
+    c[0] = studentRecord?.viewedAssignment === true;
 
+    const interviewExplicitlyLocked = interviewUnlocked === false;
     u[1] =
-      interviewUnlocked === true ||
-      forceAssignGroupings === true ||
-      studentRecord?.viewedAssignment === true;
+      !interviewExplicitlyLocked &&
+      (interviewUnlocked === true ||
+        forceAssignGroupings === true ||
+        studentRecord?.viewedAssignment === true);
 
     u[2] = shoppingUnlocked === true;
     u[3] = reflectionsUnlocked === true;

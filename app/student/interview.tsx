@@ -122,6 +122,26 @@ export default function StudentInterviewScreen() {
     sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
   );
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
+  const interviewUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/interview` : null);
+  const forceAssignGroupings = usefb(
+    sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null,
+  );
+
+  const lockStateLoaded =
+    interviewUnlocked !== undefined &&
+    forceAssignGroupings !== undefined &&
+    student !== undefined;
+  const isExplicitlyLocked = interviewUnlocked === false;
+  const canAccessInterview =
+    !isExplicitlyLocked &&
+    (interviewUnlocked === true ||
+      forceAssignGroupings === true ||
+      student?.viewedAssignment === true);
+
+  useEffect(() => {
+    if (!lockStateLoaded || canAccessInterview) return;
+    router.replace('/student/groupings');
+  }, [interviewUnlocked, forceAssignGroupings, student, router]);
 
   useEffect(() => {
     if (!student) return;
@@ -214,6 +234,8 @@ export default function StudentInterviewScreen() {
       inFlightRef.current = false;
     }
   };
+
+  if (lockStateLoaded && !canAccessInterview) return null;
 
   return (
     <SafeAreaView style={styles.root}>

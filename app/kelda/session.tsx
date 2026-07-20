@@ -208,22 +208,20 @@ export default function KeldaSessionScreen() {
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>1. Groupings / Entrance</Text>
                     <Text style={styles.phasedesc}>
-                      Students choose up to 5 peers. Auto-applies once everyone submits, or press
-                      the override to advance now.
+                      Students choose up to 5 peers. Auto-applies once everyone submits, or use
+                      the override (bottom of page) to advance now.
                     </Text>
                   </View>
                   <Pressable
-                    onPress={toggleForceAssign}
+                    onPress={() => router.push('/kelda/groupings')}
                     style={({pressed}) => [
                       styles.togglebtn,
-                      {backgroundColor: forceAssignGroupings ? c.orange : c.grey},
+                      {backgroundColor: c.purple},
                       pressed && {opacity: 0.8},
                     ]}
                   >
-                    <Text style={styles.togglebtntext}>
-                      {forceAssignGroupings ? 'OVERRIDE ON' : 'OVERRIDE'}
-                    </Text>
-                    <PsIcon name={forceAssignGroupings ? 'padlockUnlock' : 'padlock'} size={16} />
+                    <Text style={styles.togglebtntext}>Manage ›</Text>
+                    <PsIcon name="settings" size={16} />
                   </Pressable>
                 </View>
 
@@ -395,11 +393,11 @@ export default function KeldaSessionScreen() {
 
               <View style={{flexDirection: 'row', gap: 10, marginTop: 12}}>
                 <Btn
-                  label="Manage Groupings"
-                  onPress={() => router.push('/kelda/groupings')}
-                  color={c.navy}
+                  label="Override"
+                  onPress={toggleForceAssign}
+                  color={forceAssignGroupings ? c.orange : c.navy}
                   textColor={c.white}
-                  icon="settings"
+                  icon={forceAssignGroupings ? 'padlockUnlock' : 'padlock'}
                   style={{flex: 1}}
                 />
               </View>

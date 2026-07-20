@@ -55,7 +55,6 @@ export default function KeldaGroupingsScreen() {
     currentGroupIdx: number;
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const baselineCapturedRef = useRef(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -74,10 +73,7 @@ export default function KeldaGroupingsScreen() {
     const unassigned = allStudents.filter((s) => !assignedIds.has(s.id));
     const next = {groups: initialGroups, unassigned};
     setEditState(next);
-    if (!baselineCapturedRef.current) {
-      baselineCapturedRef.current = true;
-      setBaseline(next);
-    }
+    setBaseline(next);
   }, [finalizedGroups, computedGroups, allStudents, dirty]);
 
   const showToast = useCallback((message: string) => {
@@ -234,7 +230,6 @@ export default function KeldaGroupingsScreen() {
         unassigned: [],
       };
       setBaseline(savedSnapshot);
-      baselineCapturedRef.current = true;
       setDirty(false);
       showToast(
         `Finalised — ${filteredGroups.length} group${filteredGroups.length === 1 ? '' : 's'} saved ✓`,

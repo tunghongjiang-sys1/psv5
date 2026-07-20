@@ -92,7 +92,7 @@ export const ProgressBar = memo((props: ProgressBarProps) => {
       : new Array(totalSteps).fill(false);
 
   const lineColor = (leftIdx: number) =>
-    completed[leftIdx] || unlocked[leftIdx + 1]
+    completed[leftIdx]
       ? c.teal
       : leftIdx + 1 <= activeIndex
         ? c.navy

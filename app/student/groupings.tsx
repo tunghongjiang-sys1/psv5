@@ -137,6 +137,11 @@ export default function StudentGroupingsScreen() {
   const studentStranded =
     Array.isArray(finalizedGroups) && finalizedGroups.length > 0 && !studentInFinalized;
 
+  const lateArrival =
+    forceAssignGroupings === true &&
+    Array.isArray(finalizedGroups) &&
+    finalizedGroups.length > 0;
+
   const submittedCount = useMemo(() => {
     if (!studentsData) return 0;
     return Object.values(studentsData ?? {}).filter(
@@ -173,13 +178,40 @@ export default function StudentGroupingsScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      await fw(
-        update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
-          preferredGroup: selected,
-          groupingsSubmitted: true,
-          submittedAt: Date.now(),
-        }),
-      );
+      const ids = Object.keys(studentsData ?? {});
+      const preferMap: Record<string, string[]> = {};
+      for (const id of ids) {
+        const rec = studentsData?.[id] ?? {};
+        const picks =
+          id === studentId
+            ? selected
+            : Array.isArray(rec.preferredGroup)
+            ? rec.preferredGroup
+            : [];
+        preferMap[id] = picks.filter((p: string) => ids.includes(p) && p !== id);
+      }
+      const groups = computeGroupAssignments(allStudents, preferMap, sessionId!, {
+        minSize: 3,
+        maxSize: 5,
+      });
+      const writePayload: Record<string, any> = {
+        [`students/${studentId}/preferredGroup`]: selected,
+        [`students/${studentId}/groupingsSubmitted`]: true,
+        [`students/${studentId}/submittedAt`]: Date.now(),
+      };
+      const lateArrival =
+        forceAssignGroupings === true &&
+        Array.isArray(finalizedGroups) &&
+        finalizedGroups.length > 0;
+      if (lateArrival) {
+        writePayload.groupAssignments = groups.map((g, idx) => ({
+          groupNumber: idx + 1,
+          memberIds: g.memberIds,
+          memberNames: g.memberNames,
+        }));
+        writePayload.forceAssignGroupings = true;
+      }
+      await fw(update(ref(db, `sessions/${sessionId}`), writePayload));
       setPhase('waiting');
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -235,6 +267,12 @@ export default function StudentGroupingsScreen() {
                   <Text style={styles.waitingtext}>Waiting for others to join...</Text>
                 )}
               </View>
+
+              {lateArrival && (
+                <Text style={styles.syncHint}>
+                  You're joining late — submitting will re-run the grouping for everyone.
+                </Text>
+              )}
 
               {saving ? (
                 <ActivityIndicator color={c.teal} size="large" />
@@ -394,6 +432,15 @@ const styles = StyleSheet.create({
     color: c.grey,
     fontSize: 14,
     marginTop: 16,
+  },
+  syncHint: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 12,
+    color: c.orange,
+    textAlign: 'center',
+    marginBottom: 12,
+    marginTop: 16,
+    paddingHorizontal: 8,
   },
   waitingcontainer: {
     alignItems: 'center',
