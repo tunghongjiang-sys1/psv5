@@ -31,9 +31,25 @@ export default function StudentWhiteboardScreen() {
   const [currentStroke, setCurrentStroke] = useState<Stroke | null>(null);
   const [saving, setSaving] = useState(false);
   const [initialised, setInitialised] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawing = useRef(false);
+  const lastSavedSnapshotRef = useRef<{ strokes: string; notes: string }>({
+    strokes: '[]',
+    notes: '',
+  });
+  // Mirror strokes/notes into refs so the unmount-flush effect below can read
+  // the latest values without depending on a re-running effect.
+  const strokesRef = useRef<Stroke[]>([]);
+  const notesRef = useRef<string>('');
+  // Mirror sessionId/studentId into refs so persistWhiteboard reads the
+  // latest identity at call-time instead of its render-time closure (the
+  // unmount-flush effect below has empty deps and would otherwise close over
+  // a stale render).
+  const sessionIdRef = useRef<string>('');
+  const studentIdRef = useRef<string>('');
 
   useEffect(() => {
     if (!studentId || !sessionId) {
@@ -49,18 +65,26 @@ export default function StudentWhiteboardScreen() {
   useEffect(() => {
     if (student && !initialised) {
       setInitialised(true);
-      if (student.whiteboardNotes) setNotes(student.whiteboardNotes);
+      let loadedStrokes: Stroke[] = [];
+      const loadedNotes: string = student.whiteboardNotes ?? '';
+      if (loadedNotes) setNotes(loadedNotes);
       if (student.whiteboardStrokes) {
         try {
           const parsed =
             typeof student.whiteboardStrokes === 'string'
               ? JSON.parse(student.whiteboardStrokes)
               : student.whiteboardStrokes;
-          setStrokes(parsed || []);
+          loadedStrokes = (parsed || []) as Stroke[];
+          setStrokes(loadedStrokes);
         } catch (e) {
           console.error(e);
         }
       }
+      lastSavedSnapshotRef.current = {
+        strokes: JSON.stringify(loadedStrokes),
+        notes: loadedNotes,
+      };
+      setLastSavedAt(Date.now());
     }
   }, [student, initialised]);
 
@@ -87,22 +111,103 @@ export default function StudentWhiteboardScreen() {
     }
   }, [strokes, currentStroke]);
 
-  const saveWhiteboard = async () => {
+  const persistWhiteboard = async (
+    strokesToSave: Stroke[],
+    notesToSave: string,
+  ): Promise<boolean> => {
+    const sid = sessionIdRef.current;
+    const stid = studentIdRef.current;
+    if (!sid || !stid) return false;
     setSaving(true);
+    setSaveError(null);
     try {
       await fw(
-        update(ref(db, `sessions/${sessionId}/students/${studentId}`), {
-          whiteboardNotes: notes,
-          whiteboardStrokes: JSON.stringify(strokes),
+        update(ref(db, `sessions/${sid}/students/${stid}`), {
+          whiteboardNotes: notesToSave,
+          whiteboardStrokes: JSON.stringify(strokesToSave),
         }),
       );
-      Alert.alert('Whiteboard Saved!', 'Your ideas have been recorded.');
+      lastSavedSnapshotRef.current = {
+        strokes: JSON.stringify(strokesToSave),
+        notes: notesToSave,
+      };
+      setLastSavedAt(Date.now());
+      return true;
     } catch (e: any) {
-      Alert.alert('Error saving', e.message);
+      setSaveError(e?.message ?? 'Save failed');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  const saveWhiteboard = async () => {
+    const ok = await persistWhiteboard(strokes, notes);
+    if (ok) {
+      Alert.alert('Whiteboard Saved!', 'Your ideas have been recorded.');
+    } else {
+      Alert.alert('Error saving', saveError ?? 'Unknown error');
+    }
+  };
+
+  // Single debounced autosave (500ms) for both strokes and notes. Coalesces
+  // rapid stroke commits and bursts of typing into one Firebase write and
+  // skips when there's nothing to persist.
+  useEffect(() => {
+    if (!initialised || !sessionId || !studentId) return;
+    const curStrokesSerialized = JSON.stringify(strokes);
+    if (
+      curStrokesSerialized === lastSavedSnapshotRef.current.strokes &&
+      notes === lastSavedSnapshotRef.current.notes
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (
+        JSON.stringify(strokes) === lastSavedSnapshotRef.current.strokes &&
+        notes === lastSavedSnapshotRef.current.notes
+      ) {
+        return;
+      }
+      persistWhiteboard(strokes, notes).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [strokes, notes, initialised]);
+
+  // Keep strokesRef / notesRef in sync with the latest state.
+  useEffect(() => {
+    strokesRef.current = strokes;
+  }, [strokes]);
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
+  useEffect(() => {
+    studentIdRef.current = studentId;
+  }, [studentId]);
+
+  // On unmount: if the debounced autosave's 500ms timer was about to write
+  // state we haven't persisted yet (e.g. the student navigated away within
+  // 500ms of their last stroke or keystroke), flush immediately so the latest
+  // edit isn't lost. Post-unmount there's no badge UI to surface a failure,
+  // so we at least log it for debuggability.
+  useEffect(() => {
+    return () => {
+      if (!sessionIdRef.current || !studentIdRef.current) return;
+      const curStrokesSerialized = JSON.stringify(strokesRef.current);
+      if (
+        curStrokesSerialized === lastSavedSnapshotRef.current.strokes &&
+        notesRef.current === lastSavedSnapshotRef.current.notes
+      ) {
+        return;
+      }
+      persistWhiteboard(strokesRef.current, notesRef.current).catch((e) => {
+        console.warn('[whiteboard] unmount-flush save failed', e);
+      });
+    };
+  }, []);
 
   const clearCanvas = () => {
     setStrokes([]);
@@ -213,13 +318,42 @@ export default function StudentWhiteboardScreen() {
             <Pressable onPress={clearCanvas} style={styles.clearbtn}>
               <Text style={styles.cleartext}>Clear Drawing</Text>
             </Pressable>
-            {saving ? (
-              <ActivityIndicator color={c.navy} style={{marginLeft: 'auto'}} />
-            ) : (
+            <View style={styles.autosaverow}>
+              {!initialised ? (
+                <View style={styles.saveBadgeMuted}>
+                  <ActivityIndicator
+                    color={c.navy}
+                    size="small"
+                    style={{marginRight: 4}}
+                  />
+                  <Text style={styles.saveBadgeMutedText}>Loading…</Text>
+                </View>
+              ) : saving ? (
+                <View style={styles.saveBadge}>
+                  <ActivityIndicator color={c.navy} size="small" />
+                  <Text style={styles.saveBadgeText}>Saving…</Text>
+                </View>
+              ) : saveError ? (
+                <Pressable
+                  onPress={saveWhiteboard}
+                  style={[styles.saveBadge, styles.saveBadgeFailed]}
+                  hitSlop={8}
+                >
+                  <Text style={[styles.saveBadgeText, styles.saveBadgeTextFailed]}>
+                    ⚠ Save failed — tap to retry
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={[styles.saveBadge, styles.saveBadgeDone]}>
+                  <Text style={[styles.saveBadgeText, styles.saveBadgeTextDone]}>
+                    ✓ Synced
+                  </Text>
+                </View>
+              )}
               <Pressable onPress={saveWhiteboard} style={styles.savebtn}>
                 <Text style={styles.savetext}>Save Work</Text>
               </Pressable>
-            )}
+            </View>
             <Pressable onPress={downloadWork} style={styles.downloadbtn}>
               <Text style={styles.downloadtext}>Download Work</Text>
             </Pressable>
@@ -348,7 +482,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
+  },
+  autosaverow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginLeft: 'auto',
+  },
+  saveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: c.offWhite,
+    borderWidth: 1,
+    borderColor: c.greyLight,
+  },
+  saveBadgeText: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 11,
+    color: c.grey,
+  },
+  saveBadgeDone: {
+    backgroundColor: '#E7F8EE',
+    borderColor: c.green,
+  },
+  saveBadgeTextDone: {
+    color: c.green,
+    fontFamily: 'DMSans_700Bold',
+  },
+  saveBadgeFailed: {
+    backgroundColor: '#FCEBEC',
+    borderColor: c.red,
+  },
+  saveBadgeTextFailed: {
+    color: c.red,
+    fontFamily: 'DMSans_700Bold',
+  },
+  saveBadgeMuted: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: c.offWhite,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  saveBadgeMutedText: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 11,
+    color: c.grey,
   },
   savetext: {
     fontFamily: 'DMSans_700Bold',

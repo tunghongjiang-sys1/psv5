@@ -37,7 +37,6 @@ export default function KeldaSessionScreen() {
   const [shopping, setShopping] = useState(false);
   const [reflections, setReflections] = useState(false);
   const [summary, setSummary] = useState(false);
-  const [forceAssignGroupings, setForceAssignGroupingsState] = useState(false);
 
   const [qList, setQList] = useState<string[]>([
     'What did you learn about planning with seniors in mind?',
@@ -53,7 +52,6 @@ export default function KeldaSessionScreen() {
       setReflections(!!sessionData.unlocked.reflections);
       setSummary(!!sessionData.unlocked.summary);
     }
-    setForceAssignGroupingsState(sessionData?.forceAssignGroupings === true);
     if (sessionData?.reflectionQuestions) {
       const parsed = Array.isArray(sessionData.reflectionQuestions)
         ? sessionData.reflectionQuestions
@@ -140,19 +138,6 @@ export default function KeldaSessionScreen() {
     }
   };
 
-  const toggleForceAssign = async () => {
-    if (!activeSession?.id) return;
-    const nextVal = !forceAssignGroupings;
-    try {
-      await update(ref(db, `sessions/${activeSession.id}`), {
-        forceAssignGroupings: nextVal,
-      });
-      setForceAssignGroupingsState(nextVal);
-    } catch (e: any) {
-      Alert.alert('Error toggling override', e.message);
-    }
-  };
-
   const endSession = async () => {
     if (ending) return;
     showConfirm(
@@ -208,8 +193,8 @@ export default function KeldaSessionScreen() {
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>1. Groupings / Entrance</Text>
                     <Text style={styles.phasedesc}>
-                      Students choose up to 5 peers. Auto-applies once everyone submits, or use
-                      the override (bottom of page) to advance now.
+                      Students choose up to 5 peers. Auto-applies once everyone submits, or visit
+                      Manage Groupings to assign early.
                     </Text>
                   </View>
                   <Pressable
@@ -390,17 +375,6 @@ export default function KeldaSessionScreen() {
                   icon="forbidden"
                 />
               )}
-
-              <View style={{flexDirection: 'row', gap: 10, marginTop: 12}}>
-                <Btn
-                  label="Override"
-                  onPress={toggleForceAssign}
-                  color={forceAssignGroupings ? c.orange : c.navy}
-                  textColor={c.white}
-                  icon={forceAssignGroupings ? 'padlockUnlock' : 'padlock'}
-                  style={{flex: 1}}
-                />
-              </View>
             </View>
           ) : (
             <View style={styles.formlayout}>
