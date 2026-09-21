@@ -2,7 +2,11 @@ import {useState, useEffect} from 'react';
 import {Alert, Platform} from 'react-native';
 import {db, onValue, ref} from './firebaseConfig';
 
-export {interviewPersonas as defpers} from '../components/interviewChatConfig';
+export {
+  interviewPersonas as defpers,
+  normalizePersonaMode,
+  type PersonaMode,
+} from '../components/interviewChatConfig';
 
 export const showAlert = (title: string, message?: string) => {
   if (Platform.OS === 'web') {

@@ -15,6 +15,7 @@ import {useRouter} from 'expo-router';
 import {db, ref, update} from '../../lib/firebaseConfig';
 import {c, fw, usefb} from '../../lib/helpers';
 import {
+  getActivePersonas,
   getInterviewQuickQuestions,
   getInterviewStarterMessage,
   interviewPersonas,
@@ -98,7 +99,7 @@ export default function StudentInterviewScreen() {
   const lastLoadedChatsJsonRef = useRef<string | null>(null);
   const inFlightRef = useRef<boolean>(false);
 
-  const [activePersonaId, setActivePersonaId] = useState(interviewPersonas[0].id);
+  const [activePersonaId, setActivePersonaId] = useState('');
   const [messagesByPersona, setMessagesByPersona] = useState<Record<string, ChatMessage[]>>(() =>
     interviewPersonas.reduce(
       (acc, persona) => ({
@@ -123,6 +124,7 @@ export default function StudentInterviewScreen() {
   );
   const shoppingUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/shopping` : null);
   const interviewUnlocked = usefb(sessionId ? `sessions/${sessionId}/unlocked/interview` : null);
+  const sessionModeRaw = usefb(sessionId ? `sessions/${sessionId}/personaMode` : null);
   const forceAssignGroupings = usefb(
     sessionId ? `sessions/${sessionId}/forceAssignGroupings` : null,
   );
@@ -159,10 +161,13 @@ export default function StudentInterviewScreen() {
     );
   }, [student]);
 
+  const activePersonas = useMemo(
+    () => getActivePersonas(sessionModeRaw),
+    [sessionModeRaw],
+  );
   const activePersona = useMemo(
-    () =>
-      interviewPersonas.find((persona) => persona.id === activePersonaId) ?? interviewPersonas[0],
-    [activePersonaId],
+    () => activePersonas.find((persona) => persona.id === activePersonaId) ?? activePersonas[0],
+    [activePersonas, activePersonaId],
   );
   const activeMessages = messagesByPersona[activePersona.id] ?? getStarter(activePersona);
   const isWide = width >= 760;
@@ -211,7 +216,7 @@ export default function StudentInterviewScreen() {
         updatedStatuses[p.id] = computePersonaStatus(msgs, p);
       }
     }
-    const allDone = interviewPersonas.every(
+    const allDone = activePersonas.every(
       (p) => (updatedStatuses[p.id] ?? 'not_started') === 'completed',
     );
 
@@ -236,6 +241,14 @@ export default function StudentInterviewScreen() {
   };
 
   if (lockStateLoaded && !canAccessInterview) return null;
+  if (sessionId && sessionModeRaw === undefined) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <ActivityIndicator color={c.teal} size="large" style={{marginTop: 80}} />
+      </SafeAreaView>
+    );
+  }
+  if (!activePersona) return null;
 
   return (
     <SafeAreaView style={styles.root}>
@@ -243,9 +256,11 @@ export default function StudentInterviewScreen() {
         <Wide>
           <View style={[styles.layout, isWide && styles.layoutwide]}>
             <View style={[styles.peoplepane, isWide && styles.peoplepanewide]}>
-              <Text style={styles.title}>Interview Seniors</Text>
+              <Text style={styles.title}>
+                Interview {sessionModeRaw === 'children' ? 'Children' : 'Seniors'}
+              </Text>
               <View style={styles.personagrid}>
-                {interviewPersonas.map((persona) => {
+                {activePersonas.map((persona) => {
                   const selected = persona.id === activePersona.id;
                   const messages = messagesByPersona[persona.id] ?? getStarter(persona);
                   const pressed = getUniquePressedQuestions(messages, persona);

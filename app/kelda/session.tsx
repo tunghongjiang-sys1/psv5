@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import {useRouter} from 'expo-router';
 import {db, ref, set, update, remove} from '../../lib/firebaseConfig';
-import {usefb, fw, c, showConfirm, showAlert} from '../../lib/helpers';
+import {usefb, fw, c, showConfirm, showAlert, normalizePersonaMode} from '../../lib/helpers';
+import type {PersonaMode} from '../../components/interviewChatConfig';
 import {Wide, Btn, PsIcon} from '../../components/parts';
 import {useKeldaState} from '../../lib/keldaState';
 
@@ -37,6 +38,8 @@ export default function KeldaSessionScreen() {
   const [shopping, setShopping] = useState(false);
   const [reflections, setReflections] = useState(false);
   const [summary, setSummary] = useState(false);
+  const [personaMode, setPersonaMode] = useState<PersonaMode>('elderly');
+  const [savingMode, setSavingMode] = useState(false);
 
   const [qList, setQList] = useState<string[]>([
     'What did you learn about planning with seniors in mind?',
@@ -51,6 +54,9 @@ export default function KeldaSessionScreen() {
       setShopping(!!sessionData.unlocked.shopping);
       setReflections(!!sessionData.unlocked.reflections);
       setSummary(!!sessionData.unlocked.summary);
+    }
+    if (sessionData) {
+      setPersonaMode(normalizePersonaMode(sessionData.personaMode));
     }
     if (sessionData?.reflectionQuestions) {
       const parsed = Array.isArray(sessionData.reflectionQuestions)
@@ -138,6 +144,24 @@ export default function KeldaSessionScreen() {
     }
   };
 
+  const cyclePersonaMode = async () => {
+    if (!activeSession?.id || savingMode) return;
+    const nextMode: PersonaMode = personaMode === 'elderly' ? 'children' : 'elderly';
+    setSavingMode(true);
+    try {
+      await fw(
+        update(ref(db, `sessions/${activeSession.id}`), {
+          personaMode: nextMode,
+        }),
+      );
+      setPersonaMode(nextMode);
+    } catch (e: any) {
+      Alert.alert('Error changing interview mode', e.message);
+    } finally {
+      setSavingMode(false);
+    }
+  };
+
   const endSession = async () => {
     if (ending) return;
     showConfirm(
@@ -213,19 +237,37 @@ export default function KeldaSessionScreen() {
                 <View style={styles.phaserow}>
                   <View style={styles.phaseinfo}>
                     <Text style={styles.phasename}>2. Interview/Map Phase</Text>
-                    <Text style={styles.phasedesc}>Elders chat interfaces and neighborhood</Text>
+                    <Text style={styles.phasedesc}>
+                      Chat with {personaMode === 'elderly' ? 'elderly seniors' : 'children'} in the
+                      neighbourhood. Tap “Change” to switch who students interview.
+                    </Text>
                   </View>
-                  <Pressable
-                    onPress={() => togglePhase('interview', interview)}
-                    style={({pressed}) => [
-                      styles.togglebtn,
-                      {backgroundColor: interview ? c.teal : c.grey},
-                      pressed && {opacity: 0.8},
-                    ]}
-                  >
-                    <Text style={styles.togglebtntext}>{interview ? 'Unlocked' : 'Locked'}</Text>
-                    <PsIcon name={interview ? 'padlockUnlock' : 'padlock'} size={16} />
-                  </Pressable>
+                  <View style={styles.phasetoggles}>
+                    <Pressable
+                      onPress={cyclePersonaMode}
+                      disabled={savingMode}
+                      style={({pressed}) => [
+                        styles.togglebtn,
+                        {backgroundColor: c.yellow},
+                        pressed && {opacity: 0.8},
+                      ]}
+                    >
+                      <Text style={[styles.togglebtntext, {color: c.navy}]}>
+                        {personaMode === 'elderly' ? 'Elderly' : 'Children'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => togglePhase('interview', interview)}
+                      style={({pressed}) => [
+                        styles.togglebtn,
+                        {backgroundColor: interview ? c.teal : c.grey},
+                        pressed && {opacity: 0.8},
+                      ]}
+                    >
+                      <Text style={styles.togglebtntext}>{interview ? 'Unlocked' : 'Locked'}</Text>
+                      <PsIcon name={interview ? 'padlockUnlock' : 'padlock'} size={16} />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <View style={styles.phaserow}>
@@ -482,6 +524,11 @@ const styles = StyleSheet.create({
   phaseinfo: {
     flex: 1,
     paddingRight: 12,
+  },
+  phasetoggles: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   phasename: {
     fontFamily: 'DMSans_700Bold',

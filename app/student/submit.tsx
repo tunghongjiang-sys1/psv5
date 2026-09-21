@@ -22,6 +22,7 @@ import {
   defpers,
   c,
   normalizeReflectionQuestions,
+  normalizePersonaMode,
   getReflectionAnswers,
 } from '../../lib/helpers';
 import {useStudentState} from '../../lib/students';
@@ -44,7 +45,9 @@ export default function StudentSummaryScreen() {
     sessionId && studentId ? `sessions/${sessionId}/students/${studentId}` : null,
   );
   const rawQuestions = usefb(sessionId ? `sessions/${sessionId}/reflectionQuestions` : null);
+  const personaModeRaw = usefb(sessionId ? `sessions/${sessionId}/personaMode` : null);
   const questions = normalizeReflectionQuestions(rawQuestions);
+  const personaMode = normalizePersonaMode(personaModeRaw);
 
   useEffect(() => {
     if (student?.rating) {
@@ -191,7 +194,7 @@ export default function StudentSummaryScreen() {
     }
   };
 
-  if (!student) {
+  if (!student || (sessionId && personaModeRaw === undefined)) {
     return (
       <View style={styles.loadingroot}>
         <ActivityIndicator color={c.teal} size="large" />
@@ -201,7 +204,8 @@ export default function StudentSummaryScreen() {
 
   const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
   const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
-  const interviewProgress = defpers.map((p) => {
+  const activePersonas = defpers.filter((p) => p.group === personaMode);
+  const interviewProgress = activePersonas.map((p) => {
     const messages = parseTranscript(student.chats?.[p.id], p);
     const pressed = getUniquePressedQuestions(messages, p);
     const required = p.quickQuestions.length;

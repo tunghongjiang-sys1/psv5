@@ -11,7 +11,15 @@ import {
   Platform,
 } from 'react-native';
 import {useRouter, useLocalSearchParams} from 'expo-router';
-import {usefb, itemsbuy, itemsbor, defpers, c, parseWhiteboardStrokes} from '../../lib/helpers';
+import {
+  usefb,
+  itemsbuy,
+  itemsbor,
+  defpers,
+  c,
+  parseWhiteboardStrokes,
+  normalizePersonaMode,
+} from '../../lib/helpers';
 import {Wide, PsIcon} from '../../components/parts';
 import {useKeldaState} from '../../lib/keldaState';
 
@@ -85,10 +93,12 @@ const ReadOnlyWhiteboard = ({rawStrokes}: ReadOnlyWhiteboardProps) => {
 export type StudentProfilePanelProps = {
   student: any;
   studentsData: any;
+  personaMode?: 'elderly' | 'children';
 };
 
-export function StudentProfilePanel({student, studentsData}: StudentProfilePanelProps) {
+export function StudentProfilePanel({student, studentsData, personaMode}: StudentProfilePanelProps) {
   const [openChatPersona, setOpenChatPersona] = useState<string | null>(null);
+  const sessionPersonaMode = normalizePersonaMode(personaMode);
 
   const students = studentsData ? Object.values(studentsData) : [];
   const preferredGroupIds: string[] = student.preferredGroup || [];
@@ -101,6 +111,7 @@ export function StudentProfilePanel({student, studentsData}: StudentProfilePanel
 
   const boughtItems = itemsbuy.filter((i) => (student.bought || {})[i.id] > 0);
   const borrowedItems = itemsbor.filter((i) => (student.borrowed || {})[i.id] > 0);
+  const activePersonas = defpers.filter((p) => p.group === sessionPersonaMode);
 
   const getChatMessages = (pid: string): {role: string; content: string}[] => {
     const raw = student.chats?.[pid];
@@ -173,11 +184,12 @@ export function StudentProfilePanel({student, studentsData}: StudentProfilePanel
       </View>
 
       <View style={styles.sectioncard}>
-        <Text style={styles.sectiontitle}>Conversations with Seniors</Text>
+        <Text style={styles.sectiontitle}>Interview Conversations</Text>
         <Text style={styles.chatsectiondesc}>
-          Tapping on a senior below reveals their chat log.
+          Tapping on a {sessionPersonaMode === 'children' ? 'child' : 'senior'} below reveals
+          their chat log.
         </Text>
-        {defpers.map((p) => {
+        {activePersonas.map((p) => {
           const messages = getChatMessages(p.id);
           const isOpen = openChatPersona === p.id;
           const hasChat = messages.length > 0;
@@ -295,6 +307,7 @@ export default function KeldaStudentDetailScreen() {
   }, [isUnlocked, router]);
 
   const activeSession = usefb('activeSession');
+  const personaModeRaw = usefb(activeSession?.id ? `sessions/${activeSession.id}/personaMode` : null);
 
   const student = usefb(
     activeSession?.id && studentId ? `sessions/${activeSession.id}/students/${studentId}` : null,
@@ -336,7 +349,11 @@ export default function KeldaStudentDetailScreen() {
 
       <ScrollView style={{flex: 1}} contentContainerStyle={styles.scrollcontent}>
         <Wide>
-          <StudentProfilePanel student={student} studentsData={studentsData} />
+          <StudentProfilePanel
+            student={student}
+            studentsData={studentsData}
+            personaMode={normalizePersonaMode(personaModeRaw)}
+          />
         </Wide>
       </ScrollView>
     </SafeAreaView>

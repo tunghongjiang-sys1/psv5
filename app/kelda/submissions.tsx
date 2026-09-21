@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {useRouter} from 'expo-router';
-import {usefb, c, defpers} from '../../lib/helpers';
+import {usefb, c, defpers, normalizePersonaMode} from '../../lib/helpers';
 import {PsIcon} from '../../components/parts';
 import {StudentProfilePanel} from './student-detail';
 import {useKeldaState} from '../../lib/keldaState';
@@ -21,18 +21,19 @@ const sidebarWidth = 320;
 
 type InterviewStatus = 'not_started' | 'in_progress' | 'completed';
 
-const summariseInterviewProgress = (s: any) => {
+const summariseInterviewProgress = (s: any, personaMode = 'elderly') => {
+  const active = defpers.filter((p) => p.group === normalizePersonaMode(personaMode));
   if (s?.interviewStatuses && typeof s.interviewStatuses === 'object') {
     let completedCount = 0;
     let inProgressCount = 0;
     let notStartedCount = 0;
-    for (const p of defpers) {
+    for (const p of active) {
       const status = s.interviewStatuses[p.id] as InterviewStatus | undefined;
       if (status === 'completed') completedCount++;
       else if (status === 'in_progress') inProgressCount++;
       else notStartedCount++;
     }
-    const total = defpers.length;
+    const total = active.length;
     return {
       completedCount,
       inProgressCount,
@@ -49,13 +50,13 @@ const summariseInterviewProgress = (s: any) => {
 
   let completedCount = 0;
   let inProgressCount = 0;
-  for (const p of defpers) {
+  for (const p of active) {
     const messages = parseTranscript(s?.chats?.[p.id], p);
     const status = computePersonaStatus(messages, p);
     if (status === 'completed') completedCount++;
     else if (status === 'in_progress') inProgressCount++;
   }
-  const total = defpers.length;
+  const total = active.length;
   return {
     completedCount,
     inProgressCount,
@@ -84,6 +85,9 @@ export default function KeldaSubmissionsScreen() {
 
   const activeSession = usefb('activeSession');
   const studentsData = usefb(activeSession?.id ? `sessions/${activeSession.id}/students` : null);
+  const personaMode = normalizePersonaMode(
+    usefb(activeSession?.id ? `sessions/${activeSession.id}/personaMode` : null),
+  );
 
   const [search, setSearch] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
@@ -213,7 +217,7 @@ export default function KeldaSubmissionsScreen() {
     const chatCount = s.chats ? Object.keys(s.chats).length : 0;
     const hasReflection = !!s.reflection;
     const isSelected = selectedId === s.id;
-    const interview = summariseInterviewProgress(s);
+    const interview = summariseInterviewProgress(s, personaMode);
     const interviewLabel =
       interview.status === 'completed'
         ? `Interviews ✓ ${interview.completedCount}/${interview.total}`

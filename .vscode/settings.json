@@ -23,7 +23,12 @@
         "activityBarTop.inactiveForeground": "#e7e7e799",
         "commandCenter.foreground": "#e7e7e7",
         "statusBar.debuggingBackground": "#0d5702",
-        "statusBar.debuggingForeground": "#e7e7e7"
+        "statusBar.debuggingForeground": "#e7e7e7",
+        "activityBar.activeBorder": "#e7e7e7",
+        "activityBarTop.activeBorder": "#e7e7e7"
     },
-    "peacock.color": "#0d5702"
+    "peacock.color": "#0d5702",
+    "python.analysis.extraPaths": [
+        "/Users/tunghongjiang/.vscode/extensions/polymatepteltd.marlin-controller-1.0.2/dist"
+    ]
 }

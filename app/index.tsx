@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans_700Bold',
     color: c.pink,
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 12, 
   },
   subtitle: {
     fontFamily: 'DMSans_500Medium',
