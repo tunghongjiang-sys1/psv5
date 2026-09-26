@@ -29,6 +29,6 @@
     },
     "peacock.color": "#0d5702",
     "python.analysis.extraPaths": [
-        "/Users/tunghongjiang/.vscode/extensions/polymatepteltd.marlin-controller-1.0.2/dist"
+        "/Users/tunghongjiang/.vscode/extensions/polymatepteltd.marlin-controller-1.0.3/dist"
     ]
 }
